@@ -5,6 +5,7 @@ import { Mist, Rain } from "../components/weather";
 import { BackButton, Fox, ParentsButton, Pic, StarCount } from "../components/kit";
 import { art } from "../game/assets";
 import { say, sfx } from "../game/audio";
+import { zoomFrom } from "../game/transition";
 import { DifficultyBadge } from "../components/difficulty";
 import { nextStopIndex, starsIn, stopOpen, update, useProgress } from "../game/progress";
 
@@ -144,7 +145,7 @@ export function Forest() {
                   } as CSSProperties
                 }
                 aria-label={`${stop.name}${done ? ", звезда получена" : open ? "" : ", пока закрыто"}`}
-                onClick={() => {
+                onClick={(e) => {
                   if (!open) {
                     void sfx("tap");
                     setShake(stop.id);
@@ -153,6 +154,7 @@ export function Forest() {
                     return;
                   }
                   void sfx("step");
+                  zoomFrom(e.currentTarget);
                   void navigate({ to: "/forest/$stopId", params: { stopId: stop.id } });
                 }}
               >

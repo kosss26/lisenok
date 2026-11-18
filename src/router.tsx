@@ -6,6 +6,7 @@ import { Forest } from "./screens/forest";
 import { StopScreen } from "./screens/stop";
 import { Album } from "./screens/album";
 import { Glade } from "./screens/glade";
+import { viewTransitions } from "./game/transition";
 
 const root = createRootRoute({ component: Shell });
 const title = createRoute({ getParentRoute: () => root, path: "/", component: Title });
@@ -22,6 +23,7 @@ const album = createRoute({ getParentRoute: () => root, path: "/album", componen
 export const router = createRouter({
   routeTree: root.addChildren([title, map, forest, stopRoute, glade, album]),
   defaultPreload: false,
+  defaultViewTransition: viewTransitions(),
 });
 
 declare module "@tanstack/react-router" {

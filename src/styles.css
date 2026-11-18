@@ -3076,3 +3076,51 @@ img {
     );
   }
 }
+
+/* ---------- screen changes (View Transitions API; see game/transition.ts) ---------- */
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation-duration: 0.26s;
+  animation-timing-function: ease-out;
+}
+/* entering a stop: the forest zooms toward the tapped resident while the stop fades in */
+html[data-vt="zoom"]::view-transition-old(root) {
+  transform-origin: var(--vt-x, 50%) var(--vt-y, 50%);
+  animation: vt-zoom-out 0.38s cubic-bezier(0.5, 0, 0.75, 0) both;
+}
+html[data-vt="zoom"]::view-transition-new(root) {
+  transform-origin: var(--vt-x, 50%) var(--vt-y, 50%);
+  animation: vt-zoom-in 0.38s cubic-bezier(0.25, 1, 0.5, 1) 0.06s both;
+}
+@keyframes vt-zoom-out {
+  to {
+    transform: scale(2.4);
+    opacity: 0;
+  }
+}
+@keyframes vt-zoom-in {
+  from {
+    transform: scale(0.6);
+    opacity: 0;
+  }
+}
+/* no View Transitions API: every screen fades in */
+@supports not (view-transition-name: none) {
+  .app > .scene {
+    animation: scene-in 0.24s ease-out;
+  }
+}
+@keyframes scene-in {
+  from {
+    opacity: 0;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-old(root),
+  ::view-transition-new(root) {
+    animation: none !important;
+  }
+  .app > .scene {
+    animation: none !important;
+  }
+}
