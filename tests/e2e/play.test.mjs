@@ -1,4 +1,4 @@
-// Plays the whole forest on a phone: 18 stops, every task type, star and gift for each,
+// Plays the whole forest on a phone: 18 stops, every task type, star (hung in the sky) and gift,
 // the forest celebration, the album.
 import { test } from "node:test";
 import assert from "node:assert/strict";
@@ -13,6 +13,9 @@ for (const level of [1, 2, 3]) {
     for (const [i, id] of STOPS.entries()) {
       await page.waitForSelector(`.stop[data-stop="${id}"].is-next`, { state: "attached" });
       await playStop(page, id);
+      // a tap on the new star hangs it in the sky; then the gift comes
+      await page.click(".new-star");
+      await page.waitForSelector(".gift");
       assert.equal(await page.locator(".gift").count(), 1, `${id}: gift shown`);
       await page.click(".next-btn");
       await page.waitForSelector(".forest-screen");
@@ -25,6 +28,7 @@ for (const level of [1, 2, 3]) {
     const p = await saved(page);
     assert.equal(Object.keys(p.done).length, STOPS.length);
     assert.equal(p.gifts.length, STOPS.length);
+    assert.equal(Object.keys(p.sky).length, STOPS.length, "every star hangs in the sky");
     assert.equal(p.settings.level, level, "level stays when auto is off");
     await page.click(".back-btn");
     await page.click(".album-btn");
