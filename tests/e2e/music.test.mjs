@@ -6,13 +6,20 @@ import { hold, openPhone, saved } from "./helpers.mjs";
 
 const tracks = (page) => page.evaluate(() => window.__tracks().sort().join(","));
 const until = (page, want) =>
-  page.waitForFunction((w) => window.__tracks().sort().join(",") === w, want, { timeout: 8000 });
+  page
+    .waitForFunction((w) => window.__tracks().sort().join(",") === w, want, { timeout: 8000 })
+    .catch(async (e) => {
+      throw new Error(
+        `tracks ${await tracks(page)} errors ${await page.evaluate(() => window.__musicErrors)} at ${page.url()}, want ${want}: ${e.message}`,
+      );
+    });
 
 test("music follows the screen; forest sounds have their own volume", async (t) => {
   const { page, errors } = await openPhone(t, {
     path: "/forest/hedgehog",
     progress: { intro: true, settings: { level: 1, auto: false } },
   });
+  await page.evaluate(() => (window.__musicErrors = []));
   await page.mouse.click(5, 300); // first tap unlocks sound
   await until(page, "forest,map");
   await page.click(".help-btn");

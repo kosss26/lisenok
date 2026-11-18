@@ -260,7 +260,7 @@ export function warmSfx() {
 // Three tracks (map / tasks / celebration, see assets/SOUND-CREDITS.md) and a looped forest layer
 // (birds, wind, stream), each an <audio> element routed through its own gain into the music or
 // forest bus. Changing the scene cross-fades the tracks; the forest layer plays under all of them.
-type Track = { el: HTMLAudioElement; gain: GainNode | null };
+type Track = { el: HTMLAudioElement; gain: GainNode | null; on: boolean; timer?: number };
 const tracks = new Map<string, Track>();
 let scene: Scene = "map";
 let musicWanted = false;
@@ -283,19 +283,45 @@ function track(name: Scene | "forest"): Track {
     } catch {
       gain = null;
     }
-    t = { el, gain };
+    t = { el, gain, on: false };
     tracks.set(name, t);
   }
   return t;
 }
-function fade(t: Track, on: boolean, fallbackVolume: number) {
+/** A paused element some engines refuse to play again (WebKit on Linux: NotSupportedError):
+ * replace it with a fresh one that starts at the same place. */
+function revive(name: string, old: Track, fallbackVolume: number) {
+  const at = old.el.currentTime;
+  old.el.removeAttribute("src");
+  old.gain?.disconnect();
+  tracks.delete(name);
+  const t = track(name as Scene | "forest");
+  try {
+    t.el.currentTime = at;
+  } catch {
+    /* not seekable yet */
+  }
+  fade(t, true, fallbackVolume, true);
+}
+function fade(t: Track, on: boolean, fallbackVolume: number, retried = false) {
   if (t.gain && ctx) {
     t.gain.gain.cancelScheduledValues(ctx.currentTime);
     t.gain.gain.setTargetAtTime(on ? 1 : 0, ctx.currentTime, FADE / 3);
   } else t.el.volume = on ? fallbackVolume : 0;
+  t.on = on;
+  window.clearTimeout(t.timer);
   if (on) {
-    if (t.el.paused) void t.el.play().catch(() => {});
-  } else window.setTimeout(() => t.gain?.gain.value === 0 || !t.gain || t.el.pause(), FADE * 1500);
+    if (t.el.paused)
+      void t.el.play().catch((e: unknown) => {
+        (window as { __musicErrors?: string[] }).__musicErrors?.push(String(e));
+        const name = [...tracks.entries()].find(([, x]) => x === t)?.[0];
+        if (!retried && t.on && name && (e as Error)?.name === "NotSupportedError")
+          revive(name, t, fallbackVolume);
+      });
+  } else if (!t.el.paused) {
+    // pause once the fade is over, unless the track was wanted again meanwhile
+    t.timer = window.setTimeout(() => t.on || t.el.pause(), FADE * 1500);
+  }
 }
 /** Start (or keep) the music for the current scene and the forest layer. */
 export function startMusic() {
