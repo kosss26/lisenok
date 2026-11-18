@@ -1,5 +1,6 @@
 /** Child names the voice can say ("Привет, Маша!", "Молодец, Маша!"). Each needs voice lines:
- * add a line, then run `npm run voice:list && python3 tools/make-voice.py <v5_ru.pt> only-missing`. */
+ * add a line and its stress to assets/voice-stress.json, then run
+ * `npm run voice:list && python3 tools/make-voice.py missing`. */
 export const NAMES: { id: string; name: string }[] = [
   { id: "agata", name: "Агата" },
   { id: "adam", name: "Адам" },

@@ -1,6 +1,7 @@
 /**
- * Stress marks for the synthesizer ("+" before the stressed vowel). Silero guesses stress on its own,
- * but gets homographs and some words wrong (здорОво instead of здОрово, белкИ instead of бЕлки).
+ * Stress marks for phrases ("+" before the stressed vowel) in assets/voice-lines.json. tools/make-voice.py
+ * marks every word from the checked lexicon assets/voice-stress.json anyway; synthesizers guess stress
+ * on their own and get homographs and some words wrong (здорОво instead of здОрово, белкИ instead of бЕлки).
  * Applied to every spoken phrase in voice.ts; the text on screen stays clean.
  */
 const STRESS: Record<string, string> = {

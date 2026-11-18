@@ -1,7 +1,7 @@
 /**
- * Every spoken line of the game: key -> text for Silero (voice "xenia").
+ * Every spoken line of the game: key -> text for the synthesizer (Yandex SpeechKit, tools/make-voice.py).
  * The clips live in public/voice/<key>.mp3. After changing this file:
- *   npm run voice:list && python3 tools/make-voice.py <v5_ru.pt> only-missing
+ *   npm run voice:list && python3 tools/make-voice.py missing
  * ("+" before a vowel marks stress for the synthesizer.)
  */
 import { FOREST, type Line, type Voice } from "./forest.ts";
