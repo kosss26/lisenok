@@ -22,7 +22,7 @@ export function Title() {
       <ParentsButton />
       <div className="title-stars" aria-hidden>
         {[0, 1, 2, 3, 4, 5].map((i) => (
-          <Pic key={i} name="star" className={`title-star s${i}`} />
+          <Pic key={i} name="star-glow" className={`title-star s${i}`} />
         ))}
       </div>
       <h1 className="title-logo">

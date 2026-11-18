@@ -17,7 +17,7 @@ export function Sky({ className = "", highlight }: { className?: string; highlig
         return (
           <Pic
             key={s.id}
-            name="star"
+            name="star-glow"
             className={`sky-placed ${s.id === highlight ? "is-new" : ""}`}
             style={{ left: `${x}%`, top: `${y}%` }}
           />

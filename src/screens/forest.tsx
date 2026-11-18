@@ -91,6 +91,17 @@ export function Forest() {
     // only when the screen opens
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+  // only what is on screen animates: stops and ambient life out of view are paused
+  useEffect(() => {
+    const el = scroller.current;
+    if (!el || typeof IntersectionObserver === "undefined") return;
+    const io = new IntersectionObserver(
+      (entries) => entries.forEach((e) => e.target.toggleAttribute("data-off", !e.isIntersecting)),
+      { root: el, rootMargin: "120px 0px" },
+    );
+    el.querySelectorAll(".stop, .forest-half").forEach((n) => io.observe(n));
+    return () => io.disconnect();
+  }, []);
   useEffect(() => {
     if (!celebrate) return;
     const t = window.setTimeout(
@@ -165,7 +176,7 @@ export function Forest() {
                     className="stop-pic"
                   />
                 </span>
-                {done && !celebrate && <Pic name="star" className="stop-star" />}
+                {done && !celebrate && <Pic name="star-glow" className="stop-star" />}
                 <span className="stop-num" aria-hidden>
                   {i + 1}
                 </span>
@@ -195,7 +206,7 @@ export function Forest() {
                   } as CSSProperties
                 }
               >
-                <Pic name="star" className="sky-star" />
+                <Pic name="star-glow" className="sky-star" />
               </div>
             ))}
         </div>

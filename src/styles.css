@@ -306,9 +306,8 @@ img {
 }
 .title-star {
   position: absolute;
-  width: 38px;
+  width: 52px;
   animation: twinkle 2.6s ease-in-out infinite;
-  filter: drop-shadow(0 0 8px rgba(255, 220, 120, 0.9));
 }
 .title-star.s0 {
   left: 8%;
@@ -513,10 +512,23 @@ img {
   height: 100%;
   object-fit: contain;
   object-position: bottom;
-  filter: drop-shadow(0 6px 6px rgba(30, 20, 5, 0.45));
+}
+/* a cheap static ground shadow (no filter on the animated picture) */
+.stop::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  bottom: -5%;
+  width: 78%;
+  height: 18%;
+  transform: translateX(-50%);
+  border-radius: 50%;
+  background: radial-gradient(closest-side, rgba(30, 20, 5, 0.42), rgba(30, 20, 5, 0));
+  z-index: -1;
+  pointer-events: none;
 }
 .stop.is-locked .stop-pic {
-  filter: grayscale(0.8) brightness(0.75) drop-shadow(0 4px 4px rgba(0, 0, 0, 0.3));
+  filter: grayscale(0.8) brightness(0.75);
   opacity: 0.85;
 }
 .stop.is-locked .stop-body {
@@ -583,12 +595,12 @@ img {
   opacity: 1;
   animation: twinkle 1.6s ease-in-out infinite;
 }
+/* star-glow has its glow baked in (tools/bake-glow.py): 1.36x the star, no filter */
 .stop-star {
   position: absolute;
-  right: -10px;
-  top: -8px;
-  width: calc(36px * var(--s, 1));
-  filter: drop-shadow(0 0 4px #fff) drop-shadow(0 0 8px rgba(255, 210, 80, 0.95));
+  right: -16px;
+  top: -14px;
+  width: calc(49px * var(--s, 1));
   animation: shine 2.4s ease-in-out infinite;
 }
 @keyframes shine {
@@ -638,7 +650,18 @@ img {
 }
 .forest-fox {
   height: 100%;
-  filter: drop-shadow(0 8px 8px rgba(30, 20, 5, 0.45));
+}
+.forest-fox-wrap::before {
+  content: "";
+  position: absolute;
+  left: 50%;
+  bottom: -4%;
+  width: 70%;
+  height: 14%;
+  transform: translateX(-50%);
+  border-radius: 50%;
+  background: radial-gradient(closest-side, rgba(30, 20, 5, 0.45), rgba(30, 20, 5, 0));
+  z-index: -1;
 }
 .fox-track.is-walking .forest-fox {
   animation: steps 0.34s ease-in-out infinite;
@@ -657,6 +680,12 @@ img {
 }
 .fox-track.is-arrived .forest-fox {
   animation: pop-in 0.4s ease-out;
+}
+
+/* stops and forest halves scrolled out of view stop animating (set by an IntersectionObserver) */
+.stop[data-off] *,
+.forest-half[data-off] * {
+  animation-play-state: paused !important;
 }
 
 /* ambient life */
@@ -866,9 +895,8 @@ img {
   position: absolute;
   left: 0;
   top: 0;
-  width: 44px;
+  width: 60px;
   transform: translate(-50%, -50%);
-  filter: drop-shadow(0 0 10px rgba(255, 220, 110, 1));
   animation:
     star-launch 1.8s ease-in-out var(--delay) both,
     twinkle 2.2s ease-in-out calc(var(--delay) + 1.8s) infinite;
@@ -1116,12 +1144,30 @@ img {
 .hint-btn .icon .fill {
   fill: #ffd23f;
 }
-.hint-btn:not(:disabled) .icon .fill {
-  animation: glow 2.4s ease-in-out infinite;
+.hint-btn {
+  position: relative;
 }
-@keyframes glow {
+.hint-btn .icon {
+  position: relative;
+}
+.hint-btn:not(:disabled)::after {
+  content: "";
+  position: absolute;
+  inset: 8px;
+  border-radius: 50%;
+  background: radial-gradient(closest-side, rgba(255, 236, 130, 0.9), rgba(255, 236, 130, 0));
+  animation: bulb 2.4s ease-in-out infinite;
+  pointer-events: none;
+}
+@keyframes bulb {
+  0%,
+  100% {
+    opacity: 0.15;
+    transform: scale(0.8);
+  }
   50% {
-    fill: #fff3a8;
+    opacity: 1;
+    transform: scale(1.15);
   }
 }
 
@@ -2843,10 +2889,9 @@ img {
 }
 .sky-placed {
   position: absolute;
-  width: 26px;
-  height: 26px;
-  margin: -13px 0 0 -13px;
-  filter: drop-shadow(0 0 6px rgb(255 214 90 / 0.95));
+  width: 36px;
+  height: 36px;
+  margin: -18px 0 0 -18px;
   animation: twinkle-soft 3s ease-in-out infinite;
 }
 .sky-placed:nth-child(3n) {
@@ -2856,9 +2901,9 @@ img {
   animation-delay: -2s;
 }
 .sky-placed.is-new {
-  width: 34px;
-  height: 34px;
-  margin: -17px 0 0 -17px;
+  width: 46px;
+  height: 46px;
+  margin: -23px 0 0 -23px;
   animation:
     star-arrive 0.8s ease-out both,
     twinkle-soft 3s ease-in-out infinite 0.8s;
