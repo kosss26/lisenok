@@ -1,0 +1,272 @@
+{
+ "w01.jpg": [
+  "cow",
+  "horse",
+  "goat",
+  "sheep",
+  "pig",
+  "rooster",
+  "hen",
+  "duck",
+  "goose"
+ ],
+ "w02.jpg": [
+  "rabbit",
+  "_",
+  "chick",
+  "dog",
+  "cat",
+  "bull",
+  "donkey",
+  "wolf",
+  "elk"
+ ],
+ "w03.jpg": [
+  "deer",
+  "lion",
+  "tiger",
+  "elephant",
+  "giraffe",
+  "zebra",
+  "panda",
+  "monkey",
+  "crocodile"
+ ],
+ "w04.jpg": [
+  "hippo",
+  "rhino",
+  "kangaroo",
+  "camel",
+  "raccoon",
+  "snail",
+  "butterfly",
+  "ant",
+  "bee"
+ ],
+ "w05.jpg": [
+  "_",
+  "spider",
+  "caterpillar",
+  "dragonfly",
+  "woodpecker",
+  "crow",
+  "pigeon",
+  "sparrow",
+  "swan"
+ ],
+ "w06.jpg": [
+  "peacock",
+  "parrot",
+  "penguin",
+  "whale",
+  "catfish",
+  "crayfish",
+  "crab",
+  "octopus",
+  "dolphin"
+ ],
+ "w07.jpg": [
+  "shark",
+  "jellyfish",
+  "turtle",
+  "walrus",
+  "seal",
+  "seashell",
+  "boat",
+  "ship",
+  "island"
+ ],
+ "w08.jpg": [
+  "anchor",
+  "banana",
+  "pear",
+  "plum",
+  "lemon",
+  "watermelon",
+  "melon",
+  "grapes",
+  "orange"
+ ],
+ "w09.jpg": [
+  "cherry",
+  "nut",
+  "pumpkin",
+  "peas",
+  "cabbage",
+  "cucumber",
+  "tomato",
+  "potato",
+  "bread"
+ ],
+ "w10.jpg": [
+  "cake",
+  "porridge",
+  "soup",
+  "juice",
+  "tea",
+  "cupcake",
+  "pizza",
+  "candy",
+  "cookie"
+ ],
+ "w11.jpg": [
+  "icecream",
+  "milk",
+  "egg",
+  "sausage",
+  "pie",
+  "pancakes",
+  "table",
+  "chair",
+  "wardrobe"
+ ],
+ "w12.jpg": [
+  "sofa",
+  "bed",
+  "lamp",
+  "cup",
+  "spoon",
+  "fork",
+  "plate",
+  "pot",
+  "kettle"
+ ],
+ "w13.jpg": [
+  "iron",
+  "clock",
+  "key",
+  "basin",
+  "window",
+  "door",
+  "mirror",
+  "pillow",
+  "blanket"
+ ],
+ "w14.jpg": [
+  "bucket",
+  "broom",
+  "soap",
+  "toothbrush",
+  "umbrella",
+  "candle",
+  "basket",
+  "scissors",
+  "glasses"
+ ],
+ "w15.jpg": [
+  "phone",
+  "bell",
+  "book",
+  "pen",
+  "pencil",
+  "_",
+  "paintbrush",
+  "backpack",
+  "chalk"
+ ],
+ "w16.jpg": [
+  "doll",
+  "_",
+  "top",
+  "drum",
+  "trumpet",
+  "robot",
+  "ball",
+  "balloon",
+  "flag"
+ ],
+ "w17.jpg": [
+  "plane",
+  "rocket",
+  "train",
+  "bus",
+  "bicycle",
+  "scooter",
+  "tractor",
+  "truck",
+  "helicopter"
+ ],
+ "w18.jpg": [
+  "car",
+  "sled",
+  "skis",
+  "skates",
+  "swing",
+  "tram",
+  "bridge",
+  "hat",
+  "scarf"
+ ],
+ "w19.jpg": [
+  "jacket",
+  "dress",
+  "skirt",
+  "socks",
+  "boots",
+  "mittens",
+  "tshirt",
+  "shorts",
+  "shirt"
+ ],
+ "w20.jpg": [
+  "shoes",
+  "cap",
+  "coat",
+  "trousers",
+  "bow",
+  "rose",
+  "tulip",
+  "sunflower",
+  "birch"
+ ],
+ "w21.jpg": [
+  "spruce",
+  "bush",
+  "grass",
+  "stone",
+  "cloud",
+  "sun",
+  "rainbow",
+  "rain",
+  "snowman"
+ ],
+ "w22.jpg": [
+  "snowflake",
+  "lightning",
+  "campfire",
+  "nest",
+  "feather",
+  "stump",
+  "cactus",
+  "mountain",
+  "ice"
+ ],
+ "w23.jpg": [
+  "tooth",
+  "gift",
+  "crown",
+  "ring",
+  "heart",
+  "tent",
+  "saw",
+  "letter",
+  "box"
+ ],
+ "w24.jpg": [
+  "bottle",
+  "yarn",
+  "button",
+  "hammer",
+  "shovel",
+  "wateringcan",
+  "rake",
+  "lantern",
+  "beehive"
+ ],
+ "w25.jpg": [
+  "hamster",
+  "wasp",
+  "cube",
+  "notebook"
+ ]
+}

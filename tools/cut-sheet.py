@@ -2,7 +2,7 @@
 # transparent WebP per item: rembg finds the alpha, connected parts are grouped, sorted in
 # reading order, trimmed and scaled.
 # Usage: python3 tools/cut-sheet.py [sheet-name ...]   (pip install "rembg[cpu]" scipy pillow)
-import os, sys
+import json, os, sys
 import numpy as np
 from PIL import Image
 from scipy import ndimage as ndi
@@ -23,6 +23,10 @@ SHEETS = {
 # resident poses for the dialogues: worried (asking for help) and happy
 for r in ["hedgehog", "squirrel", "hare", "owl", "bear", "beaver", "badger", "mouse", "frog"]:
     SHEETS[f"res-{r}.jpg"] = (1, [f"{r}-sad", f"{r}-happy"], 460)
+# picture words (stage 3): 3x3 sheets, names in reading order; "_" = an item replaced by w25.jpg
+WORD_SHEETS = json.load(open("assets/word-sheets.json"))
+for sheet, names in WORD_SHEETS.items():
+    SHEETS[sheet] = (3 if len(names) == 9 else 2, names, 260)
 session = new_session("isnet-general-use")
 only = set(sys.argv[1:])
 os.makedirs(OUT, exist_ok=True)
@@ -33,15 +37,34 @@ for sheet, (rows, names, side) in SHEETS.items():
     cut = np.array(remove(img, session=session))
     alpha = cut[:, :, 3]
     solid = alpha > 60
-    grouped = ndi.binary_dilation(solid, iterations=14)
+    grouped = ndi.binary_dilation(solid, iterations=3 if sheet in WORD_SHEETS else 14)
     labels, count = ndi.label(grouped)
     sizes = ndi.sum(solid, labels, range(1, count + 1))
-    keep = np.argsort(sizes)[::-1][: len(names)] + 1
-    centres = ndi.center_of_mass(solid, labels, keep)
-    cell = img.height / rows
-    order = sorted(zip(keep, centres), key=lambda kc: (int(kc[1][0] // cell), kc[1][1]))
-    for (lab, _), name in zip(order, names):
-        mask = labels == lab
+    if sheet in WORD_SHEETS:
+        # strict grid: every part whose centre falls in a cell belongs to that cell's item
+        # (keeps detached bits such as raindrops or a balloon string with their item)
+        cols = len(names) // rows
+        centres = ndi.center_of_mass(solid, labels, range(1, count + 1))
+        cells = {}
+        for lab, (cy, cx), size in zip(range(1, count + 1), centres, sizes):
+            if size < 40:
+                continue
+            idx = int(cy // (img.height / rows)) * cols + int(cx // (img.width / cols))
+            cells.setdefault(idx, []).append(lab)
+        groups = [cells.get(i, []) for i in range(len(names))]
+    else:
+        keep = np.argsort(sizes)[::-1][: len(names)] + 1
+        centres = ndi.center_of_mass(solid, labels, keep)
+        cell = img.height / rows
+        order = sorted(zip(keep, centres), key=lambda kc: (int(kc[1][0] // cell), kc[1][1]))
+        groups = [[lab] for lab, _ in order]
+    for labs, name in zip(groups, names):
+        if name == "_":
+            continue
+        if not labs:
+            print("EMPTY CELL", sheet, name)
+            continue
+        mask = np.isin(labels, labs)
         a = np.where(mask, alpha, 0).astype(np.uint8)
         ys, xs = np.nonzero(a > 8)
         y0, y1, x0, x1 = ys.min(), ys.max() + 1, xs.min(), xs.max() + 1
