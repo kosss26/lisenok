@@ -37,12 +37,19 @@ export const KEY = "lisenok:progress";
 export const artRe = (name) => new RegExp(`/art/${name}\\.(avif|webp)(\\?|$)`);
 
 /** `t` is the node:test context: the browser closes even when an assertion fails. */
-export async function openPhone(t, { progress, path = "", offline = false, beforeGoto } = {}) {
+export async function openPhone(
+  t,
+  { progress, path = "", offline = false, beforeGoto, reducedMotion = "no-preference" } = {},
+) {
   const browser = WEBKIT
     ? await webkit.launch()
     : await chromium.launch({ executablePath: process.env.PW_CHROMIUM || undefined });
   t?.after(() => browser.close().catch(() => {}));
-  const context = await browser.newContext({ ...devices["iPhone 13"], serviceWorkers: "allow" });
+  const context = await browser.newContext({
+    ...devices["iPhone 13"],
+    serviceWorkers: "allow",
+    reducedMotion,
+  });
   const page = await context.newPage();
   const errors = [];
   page.on("pageerror", (e) => errors.push(String(e)));

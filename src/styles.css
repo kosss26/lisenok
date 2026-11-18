@@ -2735,16 +2735,20 @@ img {
   flex-direction: column;
   align-items: center;
 }
+/* the objects lie on the basket's body (the picture's lower half) */
 .math-basket .math-group {
-  position: relative;
+  position: absolute;
   z-index: 1;
+  left: 50%;
+  bottom: 14%;
+  width: 92%;
+  transform: translateX(-50%);
   background: transparent;
-  padding: 0 8px;
-  margin-bottom: -26px;
-  max-width: 260px;
+  padding: 0;
+  align-content: flex-end;
 }
 .math-basket-img {
-  width: clamp(120px, 40cqw, 180px);
+  width: clamp(160px, 56cqw, 240px);
   height: auto;
   object-fit: contain;
 }
@@ -2757,10 +2761,10 @@ img {
     transform: translate(0, 0);
   }
   40% {
-    transform: translate(18px, -38px) rotate(10deg);
+    transform: translate(30px, -90px) rotate(10deg);
   }
   100% {
-    transform: translate(46px, -18px) rotate(-8deg) scale(0.85);
+    transform: translate(70px, -70px) rotate(-8deg) scale(0.85);
     opacity: 0.35;
     filter: grayscale(1) drop-shadow(0 1px 1.5px rgb(90 60 30 / 0.5));
   }
@@ -2956,4 +2960,118 @@ img {
   border-radius: 22px;
   overflow: hidden;
   box-shadow: var(--shadow);
+}
+
+/* ---------- stage 8: time of day and weather ---------- */
+.forest-light {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  pointer-events: none;
+}
+.forest-rain,
+.forest-mist {
+  position: absolute;
+  left: 0;
+  right: 0;
+  z-index: 2;
+  pointer-events: none;
+}
+.forest-rain {
+  -webkit-mask-image: linear-gradient(transparent, black 25%, black 75%, transparent);
+  mask-image: linear-gradient(transparent, black 25%, black 75%, transparent);
+}
+.rain {
+  overflow: hidden;
+  pointer-events: none;
+}
+.stop-weather .rain,
+.stop-weather .mist,
+.tod-tint {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+.drop {
+  position: absolute;
+  top: -12%;
+  width: 2px;
+  height: 9%;
+  border-radius: 2px;
+  background: linear-gradient(rgb(220 235 255 / 0), rgb(220 235 255 / 0.75));
+  transform: rotate(12deg);
+  animation: rain-fall 0.8s linear infinite;
+}
+@keyframes rain-fall {
+  to {
+    transform: translate(-14vh, 120vh) rotate(12deg);
+  }
+}
+.forest-rain .drop {
+  height: 4%;
+}
+@keyframes rain-fall-band {
+  to {
+    transform: translate(-30px, 900%) rotate(12deg);
+  }
+}
+.forest-rain .drop {
+  animation-name: rain-fall-band;
+}
+.mist {
+  overflow: hidden;
+}
+.mist span {
+  position: absolute;
+  left: -40%;
+  width: 180%;
+  height: 50%;
+  border-radius: 50%;
+  background: radial-gradient(closest-side, rgb(235 240 245 / 0.55), rgb(235 240 245 / 0));
+  animation: mist-drift 22s ease-in-out infinite alternate;
+}
+.mist-a {
+  top: 20%;
+}
+.mist-b {
+  top: 50%;
+  animation-duration: 30s !important;
+  animation-direction: alternate-reverse !important;
+}
+@keyframes mist-drift {
+  to {
+    transform: translateX(18%);
+  }
+}
+.stop-weather .mist span {
+  top: auto;
+  bottom: 0;
+  height: 40%;
+}
+.stop-weather .mist-b {
+  bottom: 18%;
+}
+.tod-morning .tod-tint {
+  background: linear-gradient(rgb(255 196 150 / 0.28), rgb(255 230 190 / 0.05) 60%);
+}
+.tod-evening .tod-tint {
+  background: linear-gradient(rgb(255 120 40 / 0.3), rgb(255 170 90 / 0.12) 70%);
+}
+.tod-dusk .tod-tint {
+  background: linear-gradient(rgb(30 26 100 / 0.55), rgb(70 50 130 / 0.3) 70%);
+}
+.wx-rain .tod-tint {
+  background: linear-gradient(rgb(90 110 140 / 0.35), rgb(120 140 160 / 0.15));
+}
+@media (prefers-reduced-motion: reduce) {
+  .rain .drop {
+    display: none;
+  }
+  .rain {
+    background: repeating-linear-gradient(
+      102deg,
+      transparent 0 22px,
+      rgb(220 235 255 / 0.18) 22px 23px
+    );
+  }
 }

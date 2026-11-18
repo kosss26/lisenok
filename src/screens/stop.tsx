@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "@tanstack/react-router";
-import { FOREST, type Stop } from "../content/forest";
+import { FOREST, timeOf, weatherOf, type Stop } from "../content/forest";
+import { StopWeather } from "../components/weather";
 import { introKey, outroKey, youngId } from "../content/voice";
 import { useDialogue } from "../game/dialogue";
 import { BackButton, Fox, Pic, Scene } from "../components/kit";
@@ -94,7 +95,11 @@ function StopGame({ stopIndex }: { stopIndex: number }) {
   const [starUp, setStarUp] = useState(false);
 
   return (
-    <Scene bg="bg-clearing" className={`stop-screen phase-${phase}`}>
+    <Scene
+      bg="bg-clearing"
+      className={`stop-screen phase-${phase}`}
+      boxed={<StopWeather time={timeOf(stopIndex)} weather={weatherOf(stopIndex)} />}
+    >
       <div className="top-bar">
         <BackButton to="/forest" label="К тропинке" />
         <div className="dots" aria-label={`Задание ${step + 1} из ${round.length}`}>

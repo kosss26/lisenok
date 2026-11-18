@@ -541,3 +541,18 @@ export const WORLDS = [
   { id: "city", name: "Город", x: 52, y: 27, open: false },
   { id: "space", name: "Космос", x: 50, y: 13, open: false },
 ] as const;
+
+/** Time of day and weather along the path: morning at the entrance, dusk deep in the forest. */
+export type TimeOfDay = "morning" | "day" | "evening" | "dusk";
+export type Weather = "clear" | "rain" | "fog";
+export const timeOf = (i: number): TimeOfDay =>
+  i < 5 ? "morning" : i < 10 ? "day" : i < 14 ? "evening" : "dusk";
+/** a short shower in the middle of the path (stops 8–9), mist in the evening (13–14) */
+export const weatherOf = (i: number): Weather =>
+  i === 7 || i === 8 ? "rain" : i === 12 || i === 13 ? "fog" : "clear";
+export const TIME_NAMES: Record<TimeOfDay, string> = {
+  morning: "утро",
+  day: "день",
+  evening: "вечер",
+  dusk: "сумерки",
+};

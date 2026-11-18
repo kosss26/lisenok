@@ -1,6 +1,7 @@
 import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties } from "react";
 import { useNavigate } from "@tanstack/react-router";
-import { FOREST, onPath } from "../content/forest";
+import { FOREST, onPath, timeOf, weatherOf, type TimeOfDay } from "../content/forest";
+import { Mist, Rain } from "../components/weather";
 import { BackButton, Fox, ParentsButton, Pic, StarCount } from "../components/kit";
 import { art } from "../game/assets";
 import { say, sfx } from "../game/audio";
@@ -105,6 +106,7 @@ export function Forest() {
           <div className="forest-half forest-half-2">
             <ForestAmbient stream={false} />
           </div>
+          <ForestLight />
           {FOREST.map((stop, i) => {
             const open = stopOpen(p, i);
             const done = Boolean(p.done[stop.id]);
@@ -289,5 +291,35 @@ function ForestAmbient({ stream = true }: { stream?: boolean }) {
         </span>
       ))}
     </div>
+  );
+}
+
+// Time of day along the path (morning at the entrance → dusk deep in the forest) and the weather
+// over a few stops: a tint layer with a colour at every clearing, a shower and mist bands.
+const TINT: Record<TimeOfDay, string> = {
+  morning: "rgba(255, 186, 140, 0.16)",
+  day: "rgba(255, 255, 240, 0)",
+  evening: "rgba(255, 128, 48, 0.2)",
+  dusk: "rgba(46, 38, 120, 0.4)",
+};
+function band(w: "rain" | "fog") {
+  const ys = FOREST.flatMap((s, i) => (weatherOf(i) === w ? [onPath(s).y] : []));
+  return { top: `${Math.min(...ys) - 6}%`, height: `${Math.max(...ys) - Math.min(...ys) + 12}%` };
+}
+function ForestLight() {
+  const stops = FOREST.map((s, i) => ({ y: onPath(s).y, c: TINT[timeOf(i)] })).sort(
+    (a, b) => a.y - b.y,
+  );
+  const gradient = `linear-gradient(${[
+    `${stops[0].c} 0%`,
+    ...stops.map((s) => `${s.c} ${s.y.toFixed(1)}%`),
+    `${stops[stops.length - 1].c} 100%`,
+  ].join(", ")})`;
+  return (
+    <>
+      <div className="forest-light" style={{ background: gradient }} aria-hidden />
+      <Rain className="forest-rain" style={band("rain")} />
+      <Mist className="forest-mist" style={band("fog")} />
+    </>
   );
 }
