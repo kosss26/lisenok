@@ -50,16 +50,17 @@ test("magnet: the target lights up when a number comes close; dropping answers",
 
 test("count by carrying apples into the basket; the voice counts along", async (t) => {
   const { page, errors } = await startStop(t, "squirrel");
-  const n = await page.locator(".count-item").count();
-  for (let i = 0; i < Math.min(n, 3); i++) {
+  // leave one apple outside so tapping can still be checked (two to five apples here)
+  const k = Math.min((await page.locator(".count-item").count()) - 1, 3);
+  for (let i = 0; i < k; i++) {
     await dragTo(page, ".count-item:not(.is-in-basket)", ".count-basket");
     await page.waitForTimeout(250);
   }
-  assert.equal(await page.locator(".basket-count").innerText(), String(Math.min(n, 3)));
+  assert.equal(await page.locator(".basket-count").innerText(), String(k));
   const voice = await page.evaluate(() => window.__voice);
-  for (const k of ["n-1", "n-2", "n-3"].slice(0, Math.min(n, 3))) assert.ok(voice.includes(k), k);
+  for (const key of ["n-1", "n-2", "n-3"].slice(0, k)) assert.ok(voice.includes(key), key);
   // tapping still counts
   await page.locator(".count-item:not(.is-marked)").first().click();
-  assert.equal(await page.locator(".count-item.is-marked").count(), Math.min(n, 3) + 1);
+  assert.equal(await page.locator(".count-item.is-marked").count(), k + 1);
   assert.deepEqual(errors, []);
 });

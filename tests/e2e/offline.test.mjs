@@ -57,10 +57,21 @@ test("plays a stop with the network off", { skip: !process.env.OFFLINE }, async 
   await context.setOffline(true);
   await page.goto(new URL("forest", page.url()).href);
   await page.waitForSelector(".forest-screen");
-  const images = await page.evaluate(() =>
-    [...document.images].every((i) => i.complete && i.naturalWidth > 0),
-  );
-  assert.ok(images, "pictures load offline");
+  const broken = await page
+    .waitForFunction(
+      () => [...document.images].every((i) => i.complete && i.naturalWidth > 0),
+      null,
+      {
+        timeout: 10000,
+      },
+    )
+    .then(() => [])
+    .catch(() =>
+      page.evaluate(() =>
+        [...document.images].filter((i) => !(i.complete && i.naturalWidth > 0)).map((i) => i.src),
+      ),
+    );
+  assert.deepEqual(broken, [], "pictures load offline");
   await playStop(page, "hedgehog");
   assert.deepEqual(errors, []);
 });
