@@ -28,6 +28,28 @@ export const STOPS = [
   "bear-2",
   "frog-2",
 ];
+/** the sea path in order (world 2: opens when the forest is done) */
+export const SEA_STOPS = [
+  "sea-crab",
+  "sea-turtle",
+  "sea-gull",
+  "sea-seastar",
+  "sea-fish",
+  "sea-octopus",
+  "sea-dolphin",
+  "sea-jelly",
+  "sea-seal",
+  "sea-crab-2",
+  "sea-turtle-2",
+  "sea-seastar-2",
+  "sea-octopus-2",
+  "sea-dolphin-2",
+  "sea-gull-2",
+  "sea-seal-2",
+  "sea-fish-2",
+  "sea-jelly-2",
+];
+export const forestDone = () => Object.fromEntries(STOPS.map((s) => [s, 1]));
 export const ROUND = 5;
 /** progress where every stop before `id` is done */
 export const upTo = (id) =>

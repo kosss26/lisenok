@@ -238,7 +238,7 @@ function WorldPath({ world }: { world: World }) {
           </button>
         )}
         {celebrate && (
-          <div className="celebrate" role="dialog" aria-label="Лес пройден">
+          <div className="celebrate" role="dialog" aria-label={world.done.title}>
             {celebrateCard && (
               <div className="celebrate-card">
                 <Fox pose="cheer" className="celebrate-fox" />

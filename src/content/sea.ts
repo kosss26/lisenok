@@ -11,7 +11,7 @@ const VOICES: Record<string, Voice> = {
   fish: { voice: "lera", role: "friendly", pitch: 60 },
   octopus: { voice: "zahar", role: "good", pitch: -10 },
   dolphin: { voice: "zahar", role: "good", pitch: 55 },
-  jelly: { voice: "alena", role: "friendly", pitch: 10 },
+  jelly: { voice: "alena", role: "good", pitch: 0 },
   seal: { voice: "zahar", role: "good", pitch: -30 },
 };
 
