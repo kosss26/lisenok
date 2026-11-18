@@ -1,7 +1,7 @@
 /** The task views: multiple choice (letters, numbers, pictures, words, signs, groups) and word building. */
 import { useEffect, useRef, useState } from "react";
 import { NAMES } from "../content/names";
-import { numKey, sylKey, voiceLines } from "../content/voice";
+import { numKey, shown, sylKey, voiceLines } from "../content/voice";
 import { AGAIN, PRAISE } from "../content/voice";
 import { say, sfx } from "../game/audio";
 import { getProgress } from "../game/progress";
@@ -57,7 +57,7 @@ function PromptBar({
       >
         <SpeakerIcon />
       </button>
-      <p className="prompt-text">{LINES[task.prompt[0]]}</p>
+      <p className="prompt-text">{shown(LINES[task.prompt[0]])}</p>
       <button type="button" className="round-btn hint-btn" aria-label="Подсказка" onClick={onHint}>
         <IconBulb />
       </button>

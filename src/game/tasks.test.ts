@@ -4,7 +4,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { existsSync } from "node:fs";
 import { FOREST } from "../content/forest.ts";
-import { introKey, outroKey, voiceLines } from "../content/voice.ts";
+import { introKey, outroKey, shown, voiceLines } from "../content/voice.ts";
 import { makeRound, type Level } from "./tasks.ts";
 
 const lines = voiceLines();
@@ -51,7 +51,7 @@ test("every stop has art and voice", () => {
   for (const stop of FOREST) {
     assert.ok(hasPic(stop.resident) && hasPic(stop.gift), stop.id);
     assert.ok(stop.intro.length && stop.outro.length);
-    stop.intro.forEach((l, i) => assert.equal(lines[introKey(stop.id, i)], l.text));
-    stop.outro.forEach((l, i) => assert.equal(lines[outroKey(stop.id, i)], l.text));
+    stop.intro.forEach((l, i) => assert.equal(shown(lines[introKey(stop.id, i)]), l.text));
+    stop.outro.forEach((l, i) => assert.equal(shown(lines[outroKey(stop.id, i)]), l.text));
   }
 });

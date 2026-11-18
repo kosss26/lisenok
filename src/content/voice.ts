@@ -5,6 +5,7 @@
  * ("+" before a vowel marks stress for the synthesizer.)
  */
 import { FOREST } from "./forest.ts";
+import { stressed } from "./stress.ts";
 import { NAMES } from "./names.ts";
 import { LETTER_NAMES, SENTENCES, SYLLABLES, WORDS } from "./words.ts";
 
@@ -184,6 +185,9 @@ const FIXED: Record<string, string> = {
   "h-word-find": "Посмотри на первую букву.",
 };
 
+/** text for the screen: the same line without the stress marks */
+export const shown = (line: string | undefined) => (line ?? "").replaceAll("+", "");
+
 export function voiceLines(): Record<string, string> {
   const lines: Record<string, string> = { ...FIXED };
   // the synthesizer cannot say a lone "ё"
@@ -203,5 +207,8 @@ export function voiceLines(): Record<string, string> {
     lines[`name-${id}-hi`] = `Привет, ${name}! Отправимся в путь?`;
     lines[`name-${id}-bravo`] = `Молодец, ${name}!`;
   }
+  // stress marks for phrases (letters, syllables, numbers and words are spoken as they are)
+  for (const [k, v] of Object.entries(lines))
+    if (!/^(letter|syl|n|w)-/.test(k) && !v.includes("+")) lines[k] = stressed(v);
   return lines;
 }
