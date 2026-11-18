@@ -2,17 +2,17 @@
 import type { CSSProperties } from "react";
 import type { TimeOfDay, Weather as Wx } from "../content/forest";
 
-const DROPS = Array.from({ length: 28 }, (_, i) => ({
+const DROPS = Array.from({ length: 48 }, (_, i) => ({
   x: (i * 37) % 100,
   d: ((i * 0.29) % 1.2).toFixed(2),
   t: (0.7 + ((i * 7) % 5) * 0.08).toFixed(2),
 }));
 
 type Props = { className?: string; style?: CSSProperties };
-export function Rain({ className = "", style }: Props) {
+export function Rain({ className = "", style, dense = false }: Props & { dense?: boolean }) {
   return (
     <div className={`rain ${className}`} style={style} aria-hidden>
-      {DROPS.map((p, i) => (
+      {(dense ? DROPS : DROPS.slice(0, 28)).map((p, i) => (
         <span
           key={i}
           className="drop"

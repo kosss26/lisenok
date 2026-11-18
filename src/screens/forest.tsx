@@ -342,7 +342,7 @@ function ForestLight() {
   return (
     <>
       <div className="forest-light" style={{ background: gradient }} aria-hidden />
-      <Rain className="forest-rain" style={band("rain")} />
+      <Rain className="forest-rain" style={band("rain")} dense />
       <Mist className="forest-mist" style={band("fog")} />
     </>
   );

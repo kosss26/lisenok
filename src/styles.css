@@ -1081,13 +1081,16 @@ img {
   margin: 0 auto;
   padding: 8px 14px;
   border-radius: 20px;
-  background: rgba(255, 248, 234, 0.8);
+  background: rgba(255, 248, 234, 0.92);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.12);
 }
+/* a task still to do: clearly visible on the pale pill (also in the dialogue, where none is done) */
 .dot {
   width: 16px;
   height: 16px;
   border-radius: 50%;
-  background: #e2d3b4;
+  background: #c2a77a;
+  box-shadow: inset 0 1px 2px rgba(74, 47, 27, 0.45);
   transition: background 0.3s;
 }
 .dot.is-now {
@@ -1096,6 +1099,10 @@ img {
 }
 .dot.is-done {
   background: var(--teal);
+}
+/* the reward is a moment of its own: no buttons or counters on top */
+.stop-screen.phase-reward .top-bar {
+  display: none;
 }
 .top-bar .top-spacer {
   width: 56px;
@@ -3099,6 +3106,7 @@ img {
   pointer-events: none;
 }
 .forest-rain {
+  background: linear-gradient(rgb(50 70 100 / 0), rgb(50 70 100 / 0.14) 50%, rgb(50 70 100 / 0));
   -webkit-mask-image: linear-gradient(transparent, black 25%, black 75%, transparent);
   mask-image: linear-gradient(transparent, black 25%, black 75%, transparent);
 }
@@ -3128,12 +3136,15 @@ img {
     transform: translate(-14vh, 120vh) rotate(12deg);
   }
 }
+/* over the map the drops cross the whole band (17 of their heights), brighter and wider */
 .forest-rain .drop {
-  height: 4%;
+  height: 6%;
+  width: 2.5px;
+  background: linear-gradient(rgb(230 240 255 / 0), rgb(230 240 255 / 0.95));
 }
 @keyframes rain-fall-band {
   to {
-    transform: translate(-30px, 900%) rotate(12deg);
+    transform: translate(-60px, 1750%) rotate(12deg);
   }
 }
 .forest-rain .drop {
