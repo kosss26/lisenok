@@ -150,12 +150,20 @@ function useAnswering(task: Task, onSolved: Solved, onMood: (m: Mood) => void) {
     } else if (m >= 3) void say([...before, "show-answer"]);
     else void say([...before, `again-${rnd(AGAIN)}`]);
   };
-  const right = (spoken: string[] = []) => {
+  /** `before`: something to show first (counting along); the praise comes after it */
+  const right = (spoken: string[] = [], before?: () => Promise<unknown>) => {
     answered.current = true;
     void vibrate(30);
     setSolved(true);
     void sfx("right");
     onMood("happy");
+    if (before) {
+      // never longer than ~1 s per object, even if a clip hangs
+      const cap = new Promise((r) => window.setTimeout(r, 12000));
+      void Promise.race([before(), cap]).then(() => live.current && praiseThenNext(spoken));
+    } else praiseThenNext(spoken);
+  };
+  const praiseThenNext = (spoken: string[]) => {
     const started = Date.now();
     // Move on when the praise has been said — but never wait for it longer than PRAISE_WAIT:
     // on a slow network the clip may still be downloading, and the child must not be stuck.
@@ -228,11 +236,14 @@ function Choice({
     disabled: a.solved,
   });
 
+  // counting tasks: on the right answer the objects hop one by one while the voice counts them
+  const along = useRef<(() => Promise<void>) | null>(null);
   const tap = (o: Option) => {
     if (a.solved || off.includes(o.id)) return;
     if (o.id === task.answer) {
       setPicked(o.id);
-      a.right(o.say ? [o.say] : []);
+      if (along.current) a.right([], along.current);
+      else a.right(o.say ? [o.say] : []);
     } else {
       setOff((x) => [...x, o.id]);
       setShaking(o.id);
@@ -253,6 +264,7 @@ function Choice({
           task={task}
           picked={picked}
           onListen={() => void say(task.prompt)}
+          along={along}
         />
       </div>
       <div className={`options options-${task.layout} n${task.options.length}`}>
@@ -304,11 +316,13 @@ function VisualCard({
   task,
   picked,
   onListen,
+  along,
 }: {
   visual: Visual;
   task: ChoiceTask;
   picked: string | null;
   onListen: () => void;
+  along: React.RefObject<(() => Promise<void>) | null>;
 }) {
   switch (visual.type) {
     case "listen":
@@ -357,7 +371,7 @@ function VisualCard({
         </div>
       );
     case "count":
-      return <CountCard visual={visual} />;
+      return <CountCard visual={visual} along={along} />;
     case "math":
       return <MathCard visual={visual} picked={picked} />;
     case "compare":
@@ -373,13 +387,34 @@ function VisualCard({
 }
 
 /** Objects to count: tap each one — or carry it into the basket — and the voice counts along. */
-function CountCard({ visual }: { visual: Extract<Visual, { type: "count" }> }) {
+function CountCard({
+  visual,
+  along,
+}: {
+  visual: Extract<Visual, { type: "count" }>;
+  along: React.RefObject<(() => Promise<void>) | null>;
+}) {
   const [marked, setMarked] = useState<number[]>([]);
+  /** counting along after the right answer: objects up to this one have hopped (−1: not counting) */
+  const [hop, setHop] = useState(-1);
   const [basket, setBasket] = useState<number[]>([]);
   const basketRef = useRef<HTMLDivElement | null>(null);
   const tens = visual.mode === "tens" ? Math.floor(visual.n / 10) : 0;
   const ones = visual.mode === "tens" ? visual.n % 10 : visual.n;
   const withBasket = visual.mode !== "tens";
+  useEffect(() => {
+    if (visual.mode === "tens" || ones > 10) return;
+    along.current = async () => {
+      for (let i = 0; i < ones; i++) {
+        setHop(i);
+        // each object hops as its number is said
+        await Promise.all([say([numKey(i + 1)], 0), new Promise((r) => window.setTimeout(r, 450))]);
+      }
+    };
+    return () => {
+      along.current = null;
+    };
+  }, [along, ones, visual.mode]);
   const mark = (i: number, value: number) => {
     if (marked.includes(i)) return;
     const next = [...marked, i];
@@ -431,6 +466,8 @@ function CountCard({ visual }: { visual: Extract<Visual, { type: "count" }> }) {
               drag.dragging === String(i) ? "is-dragging" : "",
               marked.includes(i) ? "is-marked" : "",
               basket.includes(i) ? "is-in-basket" : "",
+              hop >= i ? "is-counted" : "",
+              hop === i ? "is-hop" : "",
             ].join(" ")}
             aria-label="посчитать"
             {...(withBasket && !basket.includes(i) ? drag.bind(i) : {})}
@@ -438,9 +475,12 @@ function CountCard({ visual }: { visual: Extract<Visual, { type: "count" }> }) {
             onClick={() => mark(i, totalFor(i))}
           >
             <Pic name={visual.pic} className="count-pic" />
-            {marked.includes(i) && visual.mode !== "tens" && (
-              <span className="count-badge">{marked.indexOf(i) + 1}</span>
-            )}
+            {hop >= 0
+              ? hop >= i && <span className="count-badge">{i + 1}</span>
+              : marked.includes(i) &&
+                visual.mode !== "tens" && (
+                  <span className="count-badge">{marked.indexOf(i) + 1}</span>
+                )}
           </button>
         ))}
       </div>
@@ -489,10 +529,22 @@ function MathCard({
               </span>
             </>
           ) : (
-            <span className="math-group">
-              {Array.from({ length: a }, (_, i) => (
-                <Pic key={i} name={pic} className={`math-pic ${i >= a - b ? "is-gone" : ""}`} />
-              ))}
+            // they start in the basket; then b of them hop out one by one
+            <span className="math-basket">
+              <span className="math-group">
+                {Array.from({ length: a }, (_, i) => {
+                  const k = i - (a - b);
+                  return (
+                    <Pic
+                      key={i}
+                      name={pic}
+                      className={`math-pic ${k >= 0 ? "is-leaving" : ""}`}
+                      style={k >= 0 ? ({ "--k": k } as React.CSSProperties) : undefined}
+                    />
+                  );
+                })}
+              </span>
+              <Pic name="basket" className="math-basket-img" />
             </span>
           )}
         </div>

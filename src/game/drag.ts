@@ -13,6 +13,8 @@ export type Zone = {
   area: HTMLElement | null;
   /** where the item snaps to (defaults to the area) */
   target?: HTMLElement | null;
+  /** false: no pull — the item lands exactly where it is let go (the sky) */
+  magnet?: boolean;
 };
 type Active = { key: string; dx: number; dy: number; near: number | null };
 
@@ -51,7 +53,7 @@ export function useDrag<K extends string | number>({
 
   const locate = (dx: number, dy: number, base: DOMRect) => {
     const c = { x: center(base).x + dx, y: center(base).y + dy };
-    let best: { i: number; d: number; t: { x: number; y: number } } | null = null;
+    let best: { i: number; d: number; t: { x: number; y: number }; m: boolean } | null = null;
     zones().forEach((z, i) => {
       if (!z.area) return;
       const a = z.area.getBoundingClientRect();
@@ -62,12 +64,13 @@ export function useDrag<K extends string | number>({
         c.x < a.right + SLACK &&
         c.y > a.top - SLACK &&
         c.y < a.bottom + SLACK;
-      if ((inside || d < MAGNET) && (!best || d < best.d)) best = { i, d, t };
+      const m = z.magnet !== false;
+      if ((inside || (m && d < MAGNET)) && (!best || d < best.d)) best = { i, d, t, m };
     });
     if (!best) return { dx, dy, near: null };
-    const b = best as { i: number; d: number; t: { x: number; y: number } };
+    const b = best as { i: number; d: number; t: { x: number; y: number }; m: boolean };
     // magnetic pull: stronger the closer the item is
-    const k = PULL * Math.max(0, 1 - b.d / (MAGNET * 1.6));
+    const k = b.m ? PULL * Math.max(0, 1 - b.d / (MAGNET * 1.6)) : 0;
     return { dx: dx + (b.t.x - c.x) * k, dy: dy + (b.t.y - c.y) * k, near: b.i };
   };
 

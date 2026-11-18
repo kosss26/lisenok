@@ -10,12 +10,14 @@ export function Pic({
   name,
   className,
   alt = "",
+  style,
 }: {
   name: string;
   className?: string;
   alt?: string;
+  style?: React.CSSProperties;
 }) {
-  return <img className={className} src={art(name)} alt={alt} draggable={false} />;
+  return <img className={className} src={art(name)} alt={alt} draggable={false} style={style} />;
 }
 
 export type FoxPose = "wave" | "walk" | "jump" | "think" | "cheer" | "read" | "point";

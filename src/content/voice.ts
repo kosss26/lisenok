@@ -152,6 +152,9 @@ const FIXED: Record<string, string> = {
   "glade-all": "Ура! Все находки полянки собраны! Теперь будем искать их снова.",
   "glade-open": "В лесу открылась полянка! Там можно играть сколько захочешь.",
   "album-finds": "А это находки с лесной полянки.",
+  "album-open": "Нажми на коробочку, и подарок откроется!",
+  "sky-place": "Повесь звёздочку на небо! Нажми, где она будет сиять.",
+  "sky-done": "Как красиво сияет!",
   rest: "Лисёнок устал и хочет отдохнуть. Поиграем потом!",
   "level-up": "Ты так здорово справляешься! Задания станут чуть интереснее.",
   "show-answer": "Смотри, вот правильный ответ.",
@@ -218,6 +221,9 @@ const FIXED: Record<string, string> = {
 /** text for the screen: the same line without the stress marks */
 export const shown = (line: string | undefined) => (line ?? "").replaceAll("+", "");
 
+/** the gift's name, said when it is opened or tapped in the album */
+export const giftKey = (stopId: string) => `gift-${stopId}`;
+
 export function voiceLines(): Record<string, string> {
   const lines: Record<string, string> = { ...FIXED };
   // the synthesizer cannot say a lone "ё"
@@ -236,6 +242,7 @@ export function voiceLines(): Record<string, string> {
     stop.young?.intro.forEach((l, i) => (lines[introKey(youngId(stop.id), i)] = l.text));
   }
   for (const [who, text] of Object.entries(TICKLE)) lines[tickleKey(who)] = text;
+  for (const stop of FOREST) lines[giftKey(stop.id)] = `${stop.giftName}!`;
   for (const { id, name } of NAMES) {
     lines[`name-${id}-hi`] = `Привет, ${name}! Отправимся в путь?`;
     lines[`name-${id}-bravo`] = `Молодец, ${name}!`;

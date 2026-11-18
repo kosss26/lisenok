@@ -7,11 +7,15 @@ import { BackButton, Fox, Pic, Scene } from "../components/kit";
 import { TaskView, type Guide, type Mood } from "../components/tasks";
 import { TaskFriends } from "../components/friends";
 import { DifficultyBadge } from "../components/difficulty";
-import { setScene, sfx, stopVoice } from "../game/audio";
+import { PlaceStar } from "../components/sky";
+import { giftKey } from "../content/voice";
+import { say, setScene, sfx, stopVoice } from "../game/audio";
 import {
   easeNow,
   finishStop,
+  freeSkySpot,
   getProgress,
+  placeStar,
   recordTask,
   stopOpen,
   tuneFor,
@@ -57,7 +61,7 @@ function StopGame({ stopIndex }: { stopIndex: number }) {
   const [step, setStep] = useState(0);
   const [mood, setMood] = useState<Mood>("idle");
   const [guide, setGuide] = useState<Guide>(null);
-  const [reward, setReward] = useState<{ first: boolean } | null>(null);
+  const [reward, setReward] = useState<{ first: boolean; toPlace: boolean } | null>(null);
   const mistakes = useRef(0);
 
   const solved = (m: number, hinted: boolean) => {
@@ -79,10 +83,15 @@ function StopGame({ stopIndex }: { stopIndex: number }) {
       return;
     }
     const r = finishStop(stop.id, mistakes.current);
-    setReward(r);
+    const toPlace = !getProgress().sky[stop.id];
+    setReward({ ...r, toPlace });
+    setStarUp(!toPlace);
     setPhase("reward");
     void sfx("star");
+    if (toPlace) window.setTimeout(() => void say(["sky-place"]), 600);
   };
+  /** the star hangs in the sky (or was there already): now the gift and the thanks */
+  const [starUp, setStarUp] = useState(false);
 
   return (
     <Scene bg="bg-clearing" className={`stop-screen phase-${phase}`}>
@@ -126,19 +135,42 @@ function StopGame({ stopIndex }: { stopIndex: number }) {
       {phase === "reward" && reward && (
         <div className="reward" role="dialog" aria-label="Награда">
           <div className="reward-rays" aria-hidden />
-          <Pic name="star-face" className="reward-star" />
+          {reward.toPlace ? (
+            <PlaceStar
+              stopId={stop.id}
+              onPlaced={() => window.setTimeout(() => setStarUp(true), 900)}
+            />
+          ) : (
+            <Pic name="star-face" className="reward-star" />
+          )}
           <h2>{reward.first ? "Звёздочка твоя!" : "Ты снова помог!"}</h2>
-          <div className="gift">
-            <Pic name={stop.gift} className="gift-pic" />
-            <span>{reward.first ? `Подарок: ${stop.giftName.toLowerCase()}` : stop.giftName}</span>
-          </div>
-          <Outro stop={stop} />
+          {starUp && (
+            <>
+              <button
+                type="button"
+                className="gift"
+                onClick={() => {
+                  void sfx("pick");
+                  void say([giftKey(stop.id)]);
+                }}
+              >
+                <Pic name={stop.gift} className="gift-pic" />
+                <span>
+                  {reward.first ? `Подарок: ${stop.giftName.toLowerCase()}` : stop.giftName}
+                </span>
+              </button>
+              <Outro stop={stop} />
+            </>
+          )}
           <button
             type="button"
             className="big-btn next-btn"
             onClick={() => {
               void sfx("tap");
               stopVoice();
+              // a star the child did not hang up yet gets a free spot in the sky
+              if (!getProgress().sky[stop.id])
+                placeStar(stop.id, ...freeSkySpot(getProgress(), stopIndex + 1));
               void navigate({ to: "/forest" });
             }}
           >

@@ -51,6 +51,10 @@ export type Progress = {
   forestCelebrated: boolean;
   /** лесная полянка: find id -> how many times found */
   finds: Record<string, number>;
+  /** gifts already unwrapped in the album (new ones wait in a little box) */
+  opened: string[];
+  /** where the child hung each stop's star in the sky: stop id -> [x, y] in % of the sky */
+  sky: Record<string, [number, number]>;
 };
 
 const DEFAULT: Progress = {
@@ -73,6 +77,8 @@ const DEFAULT: Progress = {
   extra: {},
   forestCelebrated: false,
   finds: {},
+  opened: [],
+  sky: {},
 };
 
 export const today = () => {
@@ -246,6 +252,26 @@ export function weakSkills(p: Progress): Skill[] {
 /** a practice round on the glade is done: the child keeps the find */
 export function addFind(id: string) {
   update((p) => ({ ...p, finds: { ...p.finds, [id]: (p.finds[id] ?? 0) + 1 } }));
+}
+export function openGift(gift: string) {
+  update((p) => (p.opened.includes(gift) ? p : { ...p, opened: [...p.opened, gift] }));
+}
+export function placeStar(stopId: string, x: number, y: number) {
+  const r = (v: number) => Math.round(Math.max(4, Math.min(96, v)) * 10) / 10;
+  update((p) => ({ ...p, sky: { ...p.sky, [stopId]: [r(x), r(y)] } }));
+}
+/** a free spot for a star the child did not place (spread over the sky, away from the others) */
+export function freeSkySpot(p: Progress, seed: number): [number, number] {
+  const taken = Object.values(p.sky);
+  let best: [number, number] = [50, 50];
+  let bestD = -1;
+  for (let i = 0; i < 40; i++) {
+    const x = 8 + ((seed * 37 + i * 53) % 84);
+    const y = 12 + ((seed * 23 + i * 31) % 76);
+    const d = Math.min(1e9, ...taken.map(([a, b]) => (a - x) ** 2 + (b - y) ** 2));
+    if (d > bestD) [best, bestD] = [[x, y], d];
+  }
+  return best;
 }
 export const forestDone = (p: Progress) => nextStopIndex(p) >= FOREST.length;
 
