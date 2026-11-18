@@ -24,8 +24,16 @@ SHEETS = {
 # resident poses for the dialogues: worried (asking for help) and happy
 for r in ["hedgehog", "squirrel", "hare", "owl", "bear", "beaver", "badger", "mouse", "frog"]:
     SHEETS[f"res-{r}.jpg"] = (1, [f"{r}-sad", f"{r}-happy"], 460)
+# the sea (world 2): every resident on one sheet — calm, worried, happy — and 18 treasures.
+# Residents are "res-…" (crab, fish, seal… are also picture words)
+for r in ["crab", "turtle", "gull", "seastar", "fish", "octopus", "dolphin", "jelly", "seal"]:
+    SHEETS[f"res-{r}.jpg"] = (1, [f"res-{r}", f"res-{r}-sad", f"res-{r}-happy"], 460)
+SHEETS["sea-treasures-1.jpg"] = (3, ["s-pearl", "s-shell", "s-seahorse", "s-anchor", "s-compass", "s-bottle", "s-coral", "s-wheel", "s-spyglass"], 300)
+SHEETS["sea-treasures-2.jpg"] = (3, ["s-boat", "s-amber", "s-glass", "s-key", "s-bell", "s-hourglass", "s-feather", "s-lighthouse", "s-crown"], 300)
 # picture words (stage 3): 3x3 sheets, names in reading order; "_" = an item replaced by w25.jpg
 WORD_SHEETS = json.load(open("assets/word-sheets.json"))
+# sheets cut by a strict grid (poses close together would otherwise merge into one part)
+GRID = set(WORD_SHEETS) | {"res-crab.jpg", "res-seastar.jpg", "res-seal.jpg"}
 for sheet, names in WORD_SHEETS.items():
     SHEETS[sheet] = (3 if len(names) == 9 else 2, names, 260)
 session = new_session("isnet-general-use")
@@ -38,10 +46,10 @@ for sheet, (rows, names, side) in SHEETS.items():
     cut = np.array(remove(img, session=session))
     alpha = cut[:, :, 3]
     solid = alpha > 60
-    grouped = ndi.binary_dilation(solid, iterations=3 if sheet in WORD_SHEETS else 14)
+    grouped = ndi.binary_dilation(solid, iterations=3 if sheet in GRID else 14)
     labels, count = ndi.label(grouped)
     sizes = ndi.sum(solid, labels, range(1, count + 1))
-    if sheet in WORD_SHEETS:
+    if sheet in GRID:
         # strict grid: every part whose centre falls in a cell belongs to that cell's item
         # (keeps detached bits such as raindrops or a balloon string with their item)
         cols = len(names) // rows
