@@ -50,7 +50,7 @@ self.addEventListener("fetch", (event) => {
     return;
   }
   event.respondWith(
-    caches.match(req).then(
+    caches.match(req, { ignoreVary: true }).then(
       (hit) =>
         hit ||
         fetch(req).then((res) => {

@@ -25,8 +25,11 @@ export function Forest() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // the fox walks the path: most of the way from the last solved stop to the next one
   const foxAt = FOREST[Math.min(next, FOREST.length - 1)];
-  const foxLeft = foxAt.x > 50 ? foxAt.x - 17 : foxAt.x + 17;
+  const from = next > 0 ? FOREST[next - 1] : { x: 50, y: 96 };
+  const foxLeft = from.x + (foxAt.x - from.x) * 0.62;
+  const foxTop = from.y + (foxAt.y - from.y) * 0.62 + 3;
 
   return (
     <Scene
@@ -70,7 +73,7 @@ export function Forest() {
             <span
               key={foxAt.id}
               className={`forest-fox-wrap ${foxLeft > foxAt.x ? "is-flipped" : ""}`}
-              style={{ left: `${foxLeft}%`, top: `${foxAt.y}%` }}
+              style={{ left: `${foxLeft}%`, top: `${foxTop}%` }}
             >
               <Fox pose="walk" className="forest-fox" />
             </span>
