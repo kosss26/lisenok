@@ -2,6 +2,7 @@
 import { useEffect, useState } from "react";
 import { FOREST, SKILL_NAMES, type Skill } from "../content/forest";
 import { NAMES } from "../content/names";
+import { WORDS } from "../content/words";
 import { say } from "../game/audio";
 import {
   LEVEL_NAMES,
@@ -11,6 +12,7 @@ import {
   today,
   useProgress,
   weakSkills,
+  weakWordIds,
 } from "../game/progress";
 import type { Level } from "../game/tasks";
 import { HoldButton } from "./kit";
@@ -157,6 +159,7 @@ export function Parents() {
                 ? `Стоит потренировать: ${weak.map((k) => SKILL_NAMES[k].toLowerCase()).join(", ")}.`
                 : "Пока всё идёт хорошо. Трудные навыки появятся здесь, когда наберётся хотя бы 3 задания."}
             </p>
+            <WordDetails />
           </>
         )}
 
@@ -229,5 +232,42 @@ export function Parents() {
         </HoldButton>
       </div>
     </div>
+  );
+}
+
+/** Words the child stumbled on: the game brings them back until two clean answers in a row. */
+function WordDetails() {
+  const p = useProgress();
+  const weak = weakWordIds(p);
+  const rows = WORDS.filter(
+    (w) => p.words[w.id] && (p.words[w.id].miss > 0 || p.words[w.id].hints > 0),
+  )
+    .sort((a, b) => p.words[b.id].miss - p.words[a.id].miss)
+    .slice(0, 12);
+  return (
+    <details className="word-details">
+      <summary>Слова, которые даются труднее</summary>
+      {rows.length ? (
+        <ul>
+          {rows.map((w) => {
+            const st = p.words[w.id];
+            return (
+              <li key={w.id}>
+                <b>{w.word}</b>
+                <span>
+                  ошибок: {st.miss}, подсказок: {st.hints}
+                </span>
+                <em>{weak.has(w.id) ? "повторяем" : "уже получается"}</em>
+              </li>
+            );
+          })}
+        </ul>
+      ) : (
+        <p>
+          Пока трудных слов нет. Если ребёнок ошибётся на слове, оно появится здесь и будет чаще
+          встречаться в заданиях, пока не получится дважды подряд.
+        </p>
+      )}
+    </details>
   );
 }

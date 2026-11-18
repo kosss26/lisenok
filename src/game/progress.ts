@@ -10,6 +10,8 @@ import type { Level } from "./tasks.ts";
 export const STORAGE_KEY = "lisenok:progress";
 
 export type SkillStat = { tasks: number; firstTry: number; mistakes: number; hints: number };
+/** per word: tasks seen, mistakes, hints, and the current run of clean answers */
+export type WordStat = { seen: number; miss: number; hints: number; streak: number };
 export type Settings = {
   name: string | null;
   level: Level;
@@ -26,6 +28,8 @@ export type Progress = {
   /** mistakes in the last stops (for auto level) */
   recent: number[];
   skills: Partial<Record<Skill, SkillStat>>;
+  /** word id -> stats (adaptation at the word level, details in the parents' corner) */
+  words: Record<string, WordStat>;
   settings: Settings;
   /** "2026-11-18" -> seconds played */
   playLog: Record<string, number>;
@@ -40,6 +44,7 @@ const DEFAULT: Progress = {
   gifts: [],
   recent: [],
   skills: {},
+  words: {},
   settings: {
     name: null,
     level: 1,
@@ -117,11 +122,15 @@ export const nextStopIndex = (p: Progress) => {
 export const stopOpen = (p: Progress, index: number) => index <= nextStopIndex(p);
 
 // ---------- answers ----------
-export function recordTask(skill: Skill, mistakes: number, hinted: boolean) {
+export function recordTask(skill: Skill, mistakes: number, hinted: boolean, word?: string) {
   update((p) => {
+    const words = word
+      ? { ...p.words, [word]: nextWordStat(p.words[word], mistakes, hinted) }
+      : p.words;
     const s = p.skills[skill] ?? { tasks: 0, firstTry: 0, mistakes: 0, hints: 0 };
     return {
       ...p,
+      words,
       skills: {
         ...p.skills,
         [skill]: {
@@ -171,6 +180,27 @@ export function finishStop(
     };
   });
   return { first, level: change };
+}
+
+/** A clean answer without a hint adds to the streak; a mistake or a hint resets it. */
+export function nextWordStat(s: WordStat | undefined, mistakes: number, hinted: boolean): WordStat {
+  const old = s ?? { seen: 0, miss: 0, hints: 0, streak: 0 };
+  const clean = mistakes === 0 && !hinted;
+  return {
+    seen: old.seen + 1,
+    miss: old.miss + mistakes,
+    hints: old.hints + (hinted ? 1 : 0),
+    streak: clean ? old.streak + 1 : 0,
+  };
+}
+
+/** Words to bring back: had a stumble and have not yet been answered cleanly twice in a row. */
+export function weakWordIds(p: Progress): Set<string> {
+  return new Set(
+    Object.entries(p.words)
+      .filter(([, w]) => (w.miss > 0 || w.hints > 0) && w.streak < 2)
+      .map(([id]) => id),
+  );
 }
 
 /** Skills that need practice: at least 3 tasks and fewer than 60% right on the first try. */

@@ -14,6 +14,7 @@ import {
   WORDS_BY_LEVEL,
   similar as alike,
   wordById,
+  type Word,
 } from "../content/words.ts";
 
 export type Level = 1 | 2 | 3;
@@ -49,6 +50,8 @@ export type ChoiceTask = {
   layout: "letters" | "pictures" | "numbers" | "words" | "signs" | "groups" | "syllables";
   options: Option[];
   answer: string;
+  /** the word this task is about (for word-level stats) */
+  word?: string;
 };
 
 export type BuildTask = {
@@ -64,6 +67,7 @@ export type BuildTask = {
   /** show faint letters in the slots (youngest level) */
   ghost: boolean;
   unit: "letter" | "syllable";
+  word?: string;
 };
 
 export type Task = ChoiceTask | BuildTask;
@@ -116,6 +120,28 @@ function deck<T>(items: readonly T[], rand: Rand) {
   };
 }
 
+/** words the child stumbled on recently: they come back (at most one per round, spaced out) */
+let weakIds: ReadonlySet<string> = new Set();
+/** like deck(), but a word the child finds hard comes first (when the level has one) */
+function wordDeck(items: readonly Word[], rand: Rand) {
+  const inner = deck(items, rand);
+  const weak = shuffle(
+    items.filter((w) => weakIds.has(w.id)),
+    rand,
+  );
+  let first = weak[0];
+  return () => {
+    if (first) {
+      const w = first;
+      first = undefined as unknown as Word;
+      return w;
+    }
+    let w = inner();
+    if (weakIds.has(w.id) && weak[0] && w.id === weak[0].id) w = inner();
+    return w;
+  };
+}
+
 // ---------- skills ----------
 function letters(level: Level, rand: Rand): Task[] {
   if (level === 1) {
@@ -136,7 +162,7 @@ function letters(level: Level, rand: Rand): Task[] {
     });
   }
   const pool = wordsAt(level).filter((w) => w.word[0] !== "Ё");
-  const next = deck(pool, rand);
+  const next = wordDeck(pool, rand);
   const all = Object.keys(LETTER_NAMES).filter((l) => !"ЙЪЬЁЩ".includes(l));
   return Array.from({ length: ROUND }, () => {
     const w = next();
@@ -145,6 +171,7 @@ function letters(level: Level, rand: Rand): Task[] {
       const opts = shuffle([l, ...sample(all, 3, rand, [l])], rand);
       return {
         kind: "choice",
+        word: w.id,
         skill: "letters",
         prompt: ["q-letter-first", wordKey(w.id)],
         hint: ["h-letter-first", wordKey(w.id)],
@@ -162,6 +189,7 @@ function letters(level: Level, rand: Rand): Task[] {
     const opts = shuffle([l, ...sample(all, 3, rand, [l])], rand);
     return {
       kind: "choice",
+      word: w.id,
       skill: "letters",
       prompt: ["q-letter-gap", wordKey(w.id)],
       hint: ["h-letter-gap", wordKey(w.id)],
@@ -226,7 +254,7 @@ function count(level: Level, rand: Rand): Task[] {
 }
 
 function build(level: Level, rand: Rand): Task[] {
-  const next = deck(wordsAt(level), rand);
+  const next = wordDeck(wordsAt(level), rand);
   const alphabet = "АОУИЫЭМСЛНДКРБТП".split("");
   return Array.from({ length: ROUND }, () => {
     const w = next();
@@ -239,6 +267,7 @@ function build(level: Level, rand: Rand): Task[] {
           : [];
     return {
       kind: "build",
+      word: w.id,
       skill: "build",
       prompt: ["q-build", wordKey(w.id)],
       hint: ["h-build", wordKey(w.id)],
@@ -253,7 +282,7 @@ function build(level: Level, rand: Rand): Task[] {
 
 function read(level: Level, rand: Rand): Task[] {
   const pool = wordsAt(level);
-  const next = deck(pool, rand);
+  const next = wordDeck(pool, rand);
   return Array.from({ length: ROUND }, () => {
     const w = next();
     // distractors: prefer words that start with the same letter, so reading matters
@@ -270,6 +299,7 @@ function read(level: Level, rand: Rand): Task[] {
     const wrong = [...(level === 1 ? [] : similar), ...rest].slice(0, n);
     return {
       kind: "choice",
+      word: w.id,
       skill: "read",
       prompt: ["q-read"],
       hint: ["h-read", wordKey(w.id)],
@@ -357,7 +387,7 @@ function syllables(level: Level, rand: Rand): Task[] {
     if (w.syl.startsWith("Ё-")) return false; // a lone "ё" syllable sounds unclear
     return level === 2 ? n === 2 && w.word.length <= 5 : n >= 2 && w.word.length >= 5;
   });
-  const next = deck(pool, rand);
+  const next = wordDeck(pool, rand);
   const allSyl = [...new Set(WORDS.flatMap((w) => w.syl.split("-")))];
   return Array.from({ length: ROUND }, () => {
     const w = next();
@@ -365,6 +395,7 @@ function syllables(level: Level, rand: Rand): Task[] {
     const extra = sample(allSyl, level === 2 ? 1 : 2, rand, target);
     return {
       kind: "build",
+      word: w.id,
       skill: "syllables",
       prompt: ["q-syl-build", wordKey(w.id)],
       hint: ["h-syl", wordKey(w.id)],
@@ -486,7 +517,13 @@ function otherAnswers(pool: typeof SENTENCES, answer: string, rand: Rand) {
   return sample(pics, 2, rand);
 }
 
-export function makeRound(skill: Skill, level: Level, rand: Rand = Math.random): Task[] {
+export function makeRound(
+  skill: Skill,
+  level: Level,
+  rand: Rand = Math.random,
+  weak: ReadonlySet<string> = new Set(),
+): Task[] {
+  weakIds = weak;
   switch (skill) {
     case "letters":
       return letters(level, rand);

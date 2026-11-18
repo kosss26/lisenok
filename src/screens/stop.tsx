@@ -6,7 +6,7 @@ import { useDialogue } from "../game/dialogue";
 import { BackButton, Fox, Pic, Scene } from "../components/kit";
 import { TaskView, type Mood } from "../components/tasks";
 import { sfx, stopVoice } from "../game/audio";
-import { finishStop, getProgress, recordTask, stopOpen } from "../game/progress";
+import { finishStop, getProgress, recordTask, stopOpen, weakWordIds } from "../game/progress";
 import { makeRound, type Task } from "../game/tasks";
 import { stopRoute } from "../router";
 
@@ -32,7 +32,9 @@ function StopGame({ stopIndex }: { stopIndex: number }) {
   const stop = FOREST[stopIndex];
   const navigate = useNavigate();
   const [phase, setPhase] = useState<Phase>("hello");
-  const [round] = useState<Task[]>(() => makeRound(stop.skill, getProgress().settings.level));
+  const [round] = useState<Task[]>(() =>
+    makeRound(stop.skill, getProgress().settings.level, Math.random, weakWordIds(getProgress())),
+  );
   const [step, setStep] = useState(0);
   const [mood, setMood] = useState<Mood>("idle");
   const [reward, setReward] = useState<{ first: boolean; level: "up" | "down" | null } | null>(
@@ -41,7 +43,7 @@ function StopGame({ stopIndex }: { stopIndex: number }) {
   const mistakes = useRef(0);
 
   const solved = (m: number, hinted: boolean) => {
-    recordTask(stop.skill, m, hinted);
+    recordTask(stop.skill, m, hinted, round[step].word);
     mistakes.current += m + (hinted && m === 0 ? 1 : 0);
     if (step + 1 < round.length) {
       setStep(step + 1);

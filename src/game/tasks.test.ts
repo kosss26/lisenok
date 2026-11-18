@@ -67,7 +67,12 @@ test("every word has a picture, a voice line and matching syllables", () => {
     assert.ok(lines[wordKey(w.id)], `voice ${w.id}`);
     assert.equal(w.syl.replaceAll("-", ""), w.word, `syllables of ${w.word}`);
     for (const s of w.syl.split("-")) assert.ok(lines[sylKey(s)], `syllable ${s}`);
-    if (w.say) assert.equal(w.say.replaceAll("+", ""), w.word.toLowerCase(), `say ${w.word}`);
+    if (w.say)
+      assert.equal(
+        w.say.replaceAll("+", "").replace(/^йу/, "ю"),
+        w.word.toLowerCase(),
+        `say ${w.word}`,
+      );
   }
   assert.ok(WORDS.length >= 200, `${WORDS.length} words`);
   for (const level of [1, 2, 3] as const) assert.ok(WORDS_BY_LEVEL[level].length >= 20);
@@ -102,4 +107,22 @@ test("wrong pictures are never look-alikes of the answer", () => {
             if (o.id !== t.answer)
               assert.ok(!similar(o.pic ?? o.id, right), `${right} vs ${o.pic}`);
         }
+});
+
+test("hard words come back first, and clean answers retire them", async () => {
+  const { nextWordStat, weakWordIds } = await import("./progress.ts");
+  const weakId = WORDS_BY_LEVEL[2][5];
+  for (let i = 0; i < 20; i++) {
+    const round = makeRound("read", 2, Math.random, new Set([weakId]));
+    assert.equal((round[0] as { word?: string }).word, weakId);
+    assert.equal(round.filter((t) => (t as { word?: string }).word === weakId).length, 1);
+  }
+  let st = nextWordStat(undefined, 1, false);
+  assert.equal(st.streak, 0);
+  const mk = (s: typeof st) => weakWordIds({ words: { x: s } } as never).has("x");
+  assert.ok(mk(st));
+  st = nextWordStat(st, 0, false);
+  assert.ok(mk(st));
+  st = nextWordStat(st, 0, false);
+  assert.ok(!mk(st));
 });
