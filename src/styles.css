@@ -2798,7 +2798,7 @@ img {
   height: 26px;
   margin: -13px 0 0 -13px;
   filter: drop-shadow(0 0 6px rgb(255 214 90 / 0.95));
-  animation: twinkle 3s ease-in-out infinite;
+  animation: twinkle-soft 3s ease-in-out infinite;
 }
 .sky-placed:nth-child(3n) {
   animation-delay: -1s;
@@ -2812,9 +2812,9 @@ img {
   margin: -17px 0 0 -17px;
   animation:
     pop-in 0.6s cubic-bezier(0.2, 0.9, 0.3, 1.4) both,
-    twinkle 3s ease-in-out infinite 0.6s;
+    twinkle-soft 3s ease-in-out infinite 0.6s;
 }
-@keyframes twinkle {
+@keyframes twinkle-soft {
   50% {
     transform: scale(0.82);
     opacity: 0.8;
