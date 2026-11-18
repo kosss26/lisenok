@@ -7,7 +7,7 @@
 import { FOREST } from "./forest.ts";
 import { stressed } from "./stress.ts";
 import { NAMES } from "./names.ts";
-import { LETTER_NAMES, SENTENCES, SYLLABLES, WORDS } from "./words.ts";
+import { LETTER_NAMES, SENTENCES, STORIES, SYLLABLES, WORDS } from "./words.ts";
 
 const TR: Record<string, string> = {
   А: "a",
@@ -160,12 +160,9 @@ const FIXED: Record<string, string> = {
   "q-read": "Прочитай слово и найди картинку.",
   "h-read": "Здесь написано:",
   // add / subtract
-  "q-add-story": "У медвежонка были горшочки с мёдом. Ему принесли ещё. Сколько стало?",
-  "q-solve": "Реши пример:",
-  "q-sub-story": "У барсука были яблоки. Он угостил друзей. Сколько осталось?",
-  "h-add": "Посчитай все горшочки вместе.",
+  "h-add": "Посчитай все картинки вместе.",
   "h-add-3": "Сначала сложи десятки, а потом единицы.",
-  "h-sub": "Посчитай яблоки, которые остались.",
+  "h-sub": "Посчитай картинки, которые остались.",
   "h-sub-3": "Сначала вычти десятки, а потом единицы.",
   // syllables
   "q-syl-find": "Найди слог",
@@ -199,6 +196,7 @@ export function voiceLines(): Record<string, string> {
   for (const w of WORDS) for (const s of w.syl.split("-")) syl.add(s);
   for (const s of syl) lines[sylKey(s)] = solo(s.toLowerCase());
   for (const s of SENTENCES) lines[`sen-${s.id}`] = s.text;
+  for (const s of STORIES) lines[`st-${s.id}`] = s.text;
   for (const stop of FOREST) {
     stop.intro.forEach((l, i) => (lines[introKey(stop.id, i)] = l.text));
     stop.outro.forEach((l, i) => (lines[outroKey(stop.id, i)] = l.text));

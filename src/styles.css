@@ -1290,6 +1290,14 @@ img {
   height: 100%;
   object-fit: contain;
 }
+/* a soft outline, so white things (eggs, snowflakes, feathers) stay visible on the paper card */
+.count-pic,
+.ten-pic,
+.math-pic,
+.option-pic,
+.group-pic {
+  filter: drop-shadow(0 1px 1.5px rgb(90 60 30 / 0.35));
+}
 .count-item.is-marked {
   transform: scale(0.9);
 }
@@ -1367,9 +1375,9 @@ img {
     transform 0.6s;
 }
 .math-pic.is-gone {
-  opacity: 0.22;
+  opacity: 0.4;
   transform: translateY(-6px) rotate(-12deg) scale(0.85);
-  filter: grayscale(1);
+  filter: grayscale(1) drop-shadow(0 1px 1.5px rgb(90 60 30 / 0.5));
 }
 .math-line {
   display: flex;

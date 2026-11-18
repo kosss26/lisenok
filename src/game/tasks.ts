@@ -8,9 +8,11 @@ import {
   EASY_LETTERS,
   LETTER_NAMES,
   SENTENCES,
+  STORIES,
   SYLLABLES,
   WORDS,
   WORDS_BY_LEVEL,
+  similar as alike,
   wordById,
 } from "../content/words.ts";
 
@@ -175,7 +177,23 @@ function letters(level: Level, rand: Rand): Task[] {
   });
 }
 
-const COUNTABLE = ["cone", "acorn", "mushroom", "apple", "raspberry", "leaf", "strawberry"];
+const COUNTABLE = [
+  "cone",
+  "acorn",
+  "mushroom",
+  "apple",
+  "raspberry",
+  "leaf",
+  "strawberry",
+  "cherry",
+  "nut",
+  "plum",
+  "candy",
+  "button",
+  "snowflake",
+  "egg",
+  "cookie",
+];
 
 function count(level: Level, rand: Rand): Task[] {
   const pics = deck(COUNTABLE, rand);
@@ -239,7 +257,7 @@ function read(level: Level, rand: Rand): Task[] {
   return Array.from({ length: ROUND }, () => {
     const w = next();
     // distractors: prefer words that start with the same letter, so reading matters
-    const others = WORDS.filter((x) => x.id !== w.id && x.pic !== w.pic);
+    const others = WORDS.filter((x) => !alike(x.pic, w.pic));
     const similar = shuffle(
       others.filter((x) => x.word[0] === w.word[0]),
       rand,
@@ -265,6 +283,10 @@ function read(level: Level, rand: Rand): Task[] {
 
 function addSub(op: "+" | "-", level: Level, rand: Rand): Task[] {
   const seen = new Set<string>();
+  const story = deck(
+    STORIES.filter((st) => st.op === op),
+    rand,
+  );
   return Array.from({ length: ROUND }, () => {
     let a = 0;
     let b = 0;
@@ -295,19 +317,14 @@ function addSub(op: "+" | "-", level: Level, rand: Rand): Task[] {
     } while (seen.has(`${a}${op}${b}`));
     seen.add(`${a}${op}${b}`);
     const answer = op === "+" ? a + b : a - b;
-    const pic = op === "+" ? "honey" : "apple";
+    const st = story();
     const hi = level === 1 ? 10 : level === 2 ? 20 : 100;
     return {
       kind: "choice",
       skill: op === "+" ? "add" : "sub",
-      prompt: [
-        level === 3 ? "q-solve" : op === "+" ? "q-add-story" : "q-sub-story",
-        numKey(a),
-        op === "+" ? "plus" : "minus",
-        numKey(b),
-      ],
+      prompt: [`st-${st.id}`, numKey(a), op === "+" ? "plus" : "minus", numKey(b)],
       hint: [op === "+" ? (level === 3 ? "h-add-3" : "h-add") : level === 3 ? "h-sub-3" : "h-sub"],
-      visual: { type: "math", a, b, op, pic: level === 3 || a > 12 ? undefined : pic },
+      visual: { type: "math", a, b, op, pic: level === 3 || a > 12 ? undefined : st.pic },
       layout: "numbers",
       options: numberOptions(answer, nearNumbers(answer, level === 1 ? 2 : 3, 0, hi, rand), rand),
       answer: String(answer),
@@ -374,7 +391,7 @@ function compare(level: Level, rand: Rand): Task[] {
       let r = int(1, 8, rand);
       while (Math.abs(l - r) < 2) r = int(1, 8, rand);
       if (rand() < 0.5) [l, r] = [r, l];
-      const pic = pick(["cheese", "strawberry", "acorn"], rand);
+      const pic = pick(["cheese", "strawberry", "acorn", "cherry", "candy", "button"], rand);
       const answer = more ? (l > r ? "left" : "right") : l < r ? "left" : "right";
       return {
         kind: "choice",
@@ -444,10 +461,8 @@ function sentence(level: Level, rand: Rand): Task[] {
       };
     });
   }
-  const next = deck(
-    SENTENCES.filter((s) => s.level === level),
-    rand,
-  );
+  const pool = SENTENCES.filter((s) => s.level === level);
+  const next = deck(pool, rand);
   return Array.from({ length: ROUND }, () => {
     const s = next();
     return {
@@ -457,10 +472,18 @@ function sentence(level: Level, rand: Rand): Task[] {
       hint: ["h-sentence", `sen-${s.id}`],
       visual: { type: "sentence", text: s.text },
       layout: "pictures",
-      options: shuffle([s.answer, ...s.options], rand).map((p) => ({ id: p, pic: p })),
+      options: shuffle([s.answer, ...(s.options ?? otherAnswers(pool, s.answer, rand))], rand).map(
+        (p) => ({ id: p, pic: p }),
+      ),
       answer: s.answer,
     };
   });
+}
+
+/** two pictures from other sentences of the level that cannot be mixed up with the answer */
+function otherAnswers(pool: typeof SENTENCES, answer: string, rand: Rand) {
+  const pics = [...new Set(pool.map((s) => s.answer))].filter((p) => !alike(p, answer));
+  return sample(pics, 2, rand);
 }
 
 export function makeRound(skill: Skill, level: Level, rand: Rand = Math.random): Task[] {

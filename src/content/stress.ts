@@ -114,6 +114,7 @@ const STRESS: Record<string, string> = {
   кругом: "круг+ом",
   мука: "мук+а",
   // stage 3: sentences and word problems
+  сом: "с+ом",
   пила: "пил+а",
   яйца: "+яйца",
   яиц: "я+иц",
