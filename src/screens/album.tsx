@@ -1,6 +1,7 @@
 import { useEffect } from "react";
 import { FOREST } from "../content/forest";
 import { BackButton, Pic } from "../components/kit";
+import { IconLock } from "../components/icons";
 import { say, sfx } from "../game/audio";
 import { useProgress } from "../game/progress";
 
@@ -39,10 +40,11 @@ export function Album() {
         })}
       </div>
       <div className="album-locked">
-        <span>Море</span>
-        <span>Горы</span>
-        <span>Город</span>
-        <span>Космос</span>
+        {["Море", "Горы", "Город", "Космос"].map((w) => (
+          <span key={w}>
+            <IconLock /> {w}
+          </span>
+        ))}
       </div>
     </div>
   );

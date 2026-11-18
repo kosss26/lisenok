@@ -7,6 +7,7 @@ import { say, sfx } from "../game/audio";
 import { getProgress } from "../game/progress";
 import type { BuildTask, ChoiceTask, Option, Task, Visual } from "../game/tasks";
 import { Pic, SpeakerIcon } from "./kit";
+import { IconBulb } from "./icons";
 
 const LINES = voiceLines();
 const rnd = (n: number) => 1 + Math.floor(Math.random() * n);
@@ -58,7 +59,7 @@ function PromptBar({
       </button>
       <p className="prompt-text">{LINES[task.prompt[0]]}</p>
       <button type="button" className="round-btn hint-btn" aria-label="Подсказка" onClick={onHint}>
-        <span aria-hidden>💡</span>
+        <IconBulb />
       </button>
     </div>
   );
@@ -86,7 +87,7 @@ function useAnswering(task: Task, onSolved: Solved, onMood: (m: Mood) => void) {
   const wrong = (spoken?: string) => {
     const m = mistakes + 1;
     setMistakes(m);
-    void sfx("wrong");
+    void sfx("wrong", 0.55);
     onMood("oops");
     window.setTimeout(() => live.current && onMood("idle"), 1200);
     const before = spoken ? [spoken] : [];
@@ -190,6 +191,7 @@ function Choice({
               ) : (
                 <span className="option-label">{o.label}</span>
               )}
+              {picked === o.id && <Burst />}
             </button>
           );
         })}
@@ -385,6 +387,11 @@ function Build({
   const a = useAnswering(task, onSolved, onMood);
   const [used, setUsed] = useState<number[]>([]);
   const [shaking, setShaking] = useState<number | null>(null);
+  /** slots whose letter has landed (the letter flies there from its tile first) */
+  const [landed, setLanded] = useState<number[]>([]);
+  const [flying, setFlying] = useState<Flight[]>([]);
+  const slotRefs = useRef<(HTMLSpanElement | null)[]>([]);
+  const pieceRefs = useRef<(HTMLButtonElement | null)[]>([]);
   const placed = used.length;
   const done = placed === task.target.length;
   const nextIdx = task.pieces.findIndex((p, i) => !used.includes(i) && p === task.target[placed]);
@@ -393,6 +400,12 @@ function Build({
     if (done || used.includes(i)) return;
     if (task.pieces[i] === task.target[placed]) {
       const next = [...used, i];
+      const slot = placed;
+      const from = pieceRefs.current[i]?.getBoundingClientRect();
+      const to = slotRefs.current[slot]?.getBoundingClientRect();
+      if (from && to && !reducedMotion()) {
+        setFlying((f) => [...f, { id: slot, text: task.pieces[i], from, to }]);
+      } else setLanded((l) => [...l, slot]);
       setUsed(next);
       if (next.length === task.target.length) {
         a.right([task.prompt[1]]);
@@ -407,6 +420,11 @@ function Build({
     }
   };
 
+  const land = (slot: number) => {
+    setFlying((f) => f.filter((x) => x.id !== slot));
+    setLanded((l) => [...l, slot]);
+  };
+
   return (
     <div className={`task task-${task.skill} task-build unit-${task.unit}`}>
       <PromptBar task={task} onRepeat={() => void say(task.prompt)} onHint={a.hint} />
@@ -416,13 +434,26 @@ function Build({
           {task.target.map((piece, i) => (
             <span
               key={i}
-              className={`slot ${i < placed ? "is-filled" : ""} ${i === placed && !done ? "is-current" : ""}`}
+              ref={(el) => {
+                slotRefs.current[i] = el;
+              }}
+              className={`slot ${i < placed ? "is-filled" : ""} ${landed.includes(i) ? "is-landed" : ""} ${i === placed && !done ? "is-current" : ""}`}
             >
-              {i < placed ? piece : task.ghost ? <span className="ghost">{piece}</span> : ""}
+              {landed.includes(i) ? (
+                piece
+              ) : task.ghost ? (
+                <span className="ghost">{piece}</span>
+              ) : (
+                ""
+              )}
             </span>
           ))}
         </div>
+        {done && landed.length === task.target.length && <Burst />}
       </div>
+      {flying.map((f) => (
+        <FlyingPiece key={f.id} flight={f} onLanded={() => land(f.id)} />
+      ))}
       <div className={`pieces n${task.pieces.length}`}>
         {task.pieces.map((piece, i) => (
           <button
@@ -436,6 +467,9 @@ function Build({
             ].join(" ")}
             data-answer={i === nextIdx ? "1" : undefined}
             aria-label={piece}
+            ref={(el) => {
+              pieceRefs.current[i] = el;
+            }}
             onClick={() => tap(i)}
           >
             {piece}
@@ -443,5 +477,55 @@ function Build({
         ))}
       </div>
     </div>
+  );
+}
+
+type Flight = { id: number; text: string; from: DOMRect; to: DOMRect };
+const reducedMotion = () =>
+  typeof matchMedia !== "undefined" && matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+/** A tile that springs from the table into its slot (Web Animations, transform only). */
+function FlyingPiece({ flight, onLanded }: { flight: Flight; onLanded: () => void }) {
+  const done = useRef(onLanded);
+  done.current = onLanded;
+  const { from, to } = flight;
+  return (
+    <span
+      className="flying-piece"
+      style={{ left: from.left, top: from.top, width: from.width, height: from.height }}
+      ref={(el) => {
+        if (!el || el.dataset.go) return;
+        el.dataset.go = "1";
+        const dx = to.left + to.width / 2 - (from.left + from.width / 2);
+        const dy = to.top + to.height / 2 - (from.top + from.height / 2);
+        const s = Math.min(1, to.height / from.height);
+        const anim = el.animate(
+          [
+            { transform: "translate(0, 0) scale(1) rotate(0deg)" },
+            {
+              transform: `translate(${dx * 0.5}px, ${dy * 0.5 - 40}px) scale(1.15) rotate(-8deg)`,
+              offset: 0.45,
+            },
+            { transform: `translate(${dx}px, ${dy}px) scale(${s}) rotate(0deg)` },
+          ],
+          { duration: 420, easing: "cubic-bezier(0.34, 1.3, 0.64, 1)", fill: "forwards" },
+        );
+        anim.onfinish = () => done.current();
+      }}
+    >
+      {flight.text}
+    </span>
+  );
+}
+
+/** Little stars bursting out of a right answer. */
+const BURST = Array.from({ length: 10 }, (_, i) => i);
+export function Burst() {
+  return (
+    <span className="burst" aria-hidden>
+      {BURST.map((i) => (
+        <Pic key={i} name="star" className="burst-star" alt="" />
+      ))}
+    </span>
   );
 }

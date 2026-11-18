@@ -1,4 +1,4 @@
-/** Parents' corner (opened by holding the ⚙ button): child, progress, time limit, sound. */
+/** Parents' corner (opened by holding the gear button): child, progress, time limit, sound. */
 import { useEffect, useState } from "react";
 import { FOREST, SKILL_NAMES, type Skill } from "../content/forest";
 import { NAMES } from "../content/names";
@@ -14,6 +14,7 @@ import {
 } from "../game/progress";
 import type { Level } from "../game/tasks";
 import { HoldButton } from "./kit";
+import { IconClose } from "./icons";
 import { closeParents } from "./parents-state";
 
 const TABS = ["Ребёнок", "Успехи", "Время", "Звук"] as const;
@@ -47,7 +48,7 @@ export function Parents() {
       <div className="parents-head">
         <h2>Для взрослых</h2>
         <button type="button" className="parents-close" aria-label="Закрыть" onClick={closeParents}>
-          ✕
+          <IconClose />
         </button>
       </div>
       <div className="parents-tabs" role="tablist">

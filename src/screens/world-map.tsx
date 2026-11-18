@@ -4,6 +4,7 @@ import { FOREST, WORLDS } from "../content/forest";
 import { NAMES } from "../content/names";
 import { Fox, ParentsButton, Pic, Scene, StarCount } from "../components/kit";
 import { say, sfx } from "../game/audio";
+import { IconLock, IconStar } from "../components/icons";
 import { greeting } from "../game/greeting";
 import { getProgress, starsIn, useProgress } from "../game/progress";
 
@@ -54,11 +55,11 @@ export function WorldMap() {
                 {w.name}
                 {w.open ? (
                   <small>
-                    ★ {stars}/{FOREST.length}
+                    <IconStar /> {stars}/{FOREST.length}
                   </small>
                 ) : (
                   <small className="lock" aria-label="закрыто">
-                    🔒
+                    <IconLock />
                   </small>
                 )}
               </span>

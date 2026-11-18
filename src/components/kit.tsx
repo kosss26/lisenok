@@ -4,6 +4,7 @@ import { useNavigate } from "@tanstack/react-router";
 import { art } from "../game/assets";
 import { sfx } from "../game/audio";
 import { openParents } from "./parents-state";
+import { IconBack, IconGear } from "./icons";
 
 export function Pic({
   name,
@@ -71,9 +72,7 @@ export function HoldButton({
 export function ParentsButton() {
   return (
     <HoldButton label="Для взрослых: удерживайте" className="parents-btn" onDone={openParents}>
-      <span className="parents-icon" aria-hidden>
-        ⚙
-      </span>
+      <IconGear className="parents-icon" />
     </HoldButton>
   );
 }
@@ -90,9 +89,7 @@ export function BackButton({ to, label = "Назад" }: { to: string; label?: s
         void navigate({ to });
       }}
     >
-      <svg viewBox="0 0 24 24" aria-hidden>
-        <path d="M15 5l-7 7 7 7" />
-      </svg>
+      <IconBack />
     </button>
   );
 }
