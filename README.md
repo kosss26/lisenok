@@ -42,6 +42,12 @@ npm run build && (npm run preview &)
 OFFLINE=1 BASE_URL=http://127.0.0.1:8081/ npm run test:e2e
 ```
 
+## Публикация
+
+Игра — статичный сайт (`dist/`). Опубликована на том же сервере, что и «Кто сказал?»:
+https://lisenok.151.243.212.26.nip.io/ (nginx + Let's Encrypt, конфиг `deploy/nginx-lisenok.conf`).
+Обновить: `deploy/update.sh` (нужен SSH к серверу). Для Vercel подходит `vercel.json`.
+
 ## Как добавить
 
 - **Слово с картинкой:** строка в `src/content/words.ts` (и в `WORDS_BY_LEVEL`), картинка —
