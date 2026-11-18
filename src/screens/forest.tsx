@@ -8,7 +8,7 @@ import { art } from "../game/assets";
 import { say, sfx } from "../game/audio";
 import { zoomFrom } from "../game/transition";
 import { DifficultyBadge } from "../components/difficulty";
-import { nextStopIndex, starsIn, stopOpen, update, useProgress } from "../game/progress";
+import { nextStopIndex, starsIn, stopOpen, update, useProgress, worldOpen } from "../game/progress";
 
 type Pt = { x: number; y: number };
 /** Where the fox stood when each path was last shown (this launch) — it walks on from there. */
@@ -52,6 +52,11 @@ function WorldPath({ world }: { world: World }) {
   const allDone = next >= stops.length;
   const celebrated = world.id === "forest" ? p.forestCelebrated : p.seaCelebrated;
   const celebrate = allDone && !celebrated;
+  // a world that is not open yet (typed address): back to the map
+  const locked = !worldOpen(p, world.id);
+  useEffect(() => {
+    if (locked) void navigate({ to: "/map", replace: true, viewTransition: false });
+  }, [locked, navigate]);
   const [shake, setShake] = useState<string | null>(null);
 
   const target = foxSpot(next, stops);

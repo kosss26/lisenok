@@ -42,6 +42,8 @@ export function StopScreen() {
       void navigate({
         to: found && worldOpen(p, found.world.id) ? `/${found.world.id}` : "/map",
         replace: true,
+        // a redirect, not a move: no crossfade (it would be cut short by the next screen)
+        viewTransition: false,
       });
   }, [allowed, navigate, found, p]);
   useEffect(() => () => stopVoice(), []);

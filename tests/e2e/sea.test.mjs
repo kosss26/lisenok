@@ -15,6 +15,8 @@ test("the sea is locked until every forest star is back", async (t) => {
   // typing the address does not open it either
   await page.goto(`${BASE}sea/sea-crab`);
   await page.waitForURL(/\/map$/);
+  await page.goto(`${BASE}sea`);
+  await page.waitForURL(/\/map$/);
   assert.deepEqual(errors, []);
 });
 

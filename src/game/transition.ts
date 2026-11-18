@@ -18,3 +18,11 @@ export function zoomFrom(el: Element) {
   window.clearTimeout(clear);
   clear = window.setTimeout(() => delete root.dataset.vt, 900);
 }
+
+// A crossfade cut short by the next navigation rejects its promises with "Transition was skipped":
+// that is expected, not an error.
+if (typeof window !== "undefined")
+  window.addEventListener("unhandledrejection", (e) => {
+    const r = e.reason as { name?: string; message?: string } | undefined;
+    if (r?.name === "AbortError" && /transition/i.test(r.message ?? "")) e.preventDefault();
+  });
