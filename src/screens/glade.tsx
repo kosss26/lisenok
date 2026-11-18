@@ -6,11 +6,13 @@ import { wordKey } from "../content/voice";
 import { BackButton, Fox, Pic, Scene } from "../components/kit";
 import { TaskView, type Guide, type Mood } from "../components/tasks";
 import { TaskFriends } from "../components/friends";
+import { DifficultyBadge } from "../components/difficulty";
 import { say, setScene, sfx, stopVoice } from "../game/audio";
 import {
   addFind,
   forestDone,
   getProgress,
+  gladeGrade,
   recordTask,
   weakSkills,
   weakWordIds,
@@ -20,7 +22,7 @@ import { makePractice, type Task } from "../game/tasks";
 type Phase = "hello" | "task" | "find";
 const newRound = () => {
   const p = getProgress();
-  return makePractice(p.settings.level, weakSkills(p), weakWordIds(p));
+  return makePractice({ level: p.settings.level, g: gladeGrade(p) }, weakSkills(p), weakWordIds(p));
 };
 
 /** Лесная полянка: endless practice after the forest — weak skills and words first, then review. */
@@ -97,7 +99,7 @@ function GladeGame() {
             />
           ))}
         </div>
-        <span className="top-spacer" />
+        <DifficultyBadge pick={phase === "hello"} />
       </div>
 
       {phase === "hello" && (

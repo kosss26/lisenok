@@ -54,6 +54,8 @@ export const numKey = (n: number) => `n-${n}`;
 export const wordKey = (id: string) => `w-${id}`;
 export const introKey = (stop: string, i: number) => `dlg-${stop}-${i}`;
 export const outroKey = (stop: string, i: number) => `bye-${stop}-${i}`;
+/** the dialogue a stop uses for 5–6-year-olds (when it has one) */
+export const youngId = (stop: string) => `${stop}-young`;
 
 /** Lines spoken by a resident get their own voice; everything else is "xenia" (the fox and the narrator). */
 /** what a forest resident says when the child tickles it (in its own voice) */
@@ -79,6 +81,9 @@ export function voiceSpeakers(): Record<string, { speaker: string; pitch: number
     });
     stop.outro.forEach((l, i) => {
       if (l.who === "res") out[outroKey(stop.id, i)] = stop.voice;
+    });
+    stop.young?.intro.forEach((l, i) => {
+      if (l.who === "res") out[introKey(youngId(stop.id), i)] = stop.voice;
     });
   }
   return out;
@@ -134,6 +139,11 @@ const FIXED: Record<string, string> = {
   "forest-done":
     "Ура! Все звёзды леса собраны! Они снова сияют на небе. Скоро мы отправимся к морю!",
   album: "Это твой альбом сокровищ. Каждый житель леса дарит подарок.",
+  "diff-pick": "Как будем играть? Легко, средне или трудно?",
+  "diff-easy": "Хорошо! Будем играть легко.",
+  "diff-medium": "Хорошо! Будем играть средне.",
+  "diff-hard": "Ого! Будем играть трудно!",
+  "q-solve": "Реши пример.",
   "touch-fox": "Хи-хи! Щекотно!",
   "glade-hello":
     "Это лесная полянка! Здесь можно играть сколько захочешь. А после каждых пяти заданий нас ждёт находка.",
@@ -223,6 +233,7 @@ export function voiceLines(): Record<string, string> {
   for (const stop of FOREST) {
     stop.intro.forEach((l, i) => (lines[introKey(stop.id, i)] = l.text));
     stop.outro.forEach((l, i) => (lines[outroKey(stop.id, i)] = l.text));
+    stop.young?.intro.forEach((l, i) => (lines[introKey(youngId(stop.id), i)] = l.text));
   }
   for (const [who, text] of Object.entries(TICKLE)) lines[tickleKey(who)] = text;
   for (const { id, name } of NAMES) {

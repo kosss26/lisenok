@@ -1,13 +1,22 @@
 import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "@tanstack/react-router";
 import { FOREST, type Stop } from "../content/forest";
-import { introKey, outroKey } from "../content/voice";
+import { introKey, outroKey, youngId } from "../content/voice";
 import { useDialogue } from "../game/dialogue";
 import { BackButton, Fox, Pic, Scene } from "../components/kit";
 import { TaskView, type Guide, type Mood } from "../components/tasks";
 import { TaskFriends } from "../components/friends";
+import { DifficultyBadge } from "../components/difficulty";
 import { setScene, sfx, stopVoice } from "../game/audio";
-import { finishStop, getProgress, recordTask, stopOpen, weakWordIds } from "../game/progress";
+import {
+  easeNow,
+  finishStop,
+  getProgress,
+  recordTask,
+  stopOpen,
+  tuneFor,
+  weakWordIds,
+} from "../game/progress";
 import { makeRound, type Task } from "../game/tasks";
 import { stopRoute } from "../router";
 
@@ -37,21 +46,35 @@ function StopGame({ stopIndex }: { stopIndex: number }) {
     setScene(phase === "task" ? "tasks" : phase === "reward" ? "celebrate" : "map");
   }, [phase]);
   useEffect(() => () => setScene("map"), []);
-  const [round] = useState<Task[]>(() =>
-    makeRound(stop.skill, getProgress().settings.level, Math.random, weakWordIds(getProgress())),
+  const [round, setRound] = useState<Task[]>(() =>
+    makeRound(
+      stop.skill,
+      tuneFor(getProgress(), stopIndex),
+      Math.random,
+      weakWordIds(getProgress()),
+    ),
   );
   const [step, setStep] = useState(0);
   const [mood, setMood] = useState<Mood>("idle");
   const [guide, setGuide] = useState<Guide>(null);
-  const [reward, setReward] = useState<{ first: boolean; level: "up" | "down" | null } | null>(
-    null,
-  );
+  const [reward, setReward] = useState<{ first: boolean } | null>(null);
   const mistakes = useRef(0);
 
   const solved = (m: number, hinted: boolean) => {
-    recordTask(stop.skill, m, hinted, round[step].word);
+    recordTask(round[step].skill, m, hinted, round[step].word);
     mistakes.current += m + (hinted && m === 0 ? 1 : 0);
     if (step + 1 < round.length) {
+      // it was hard: the rest of the round gets easier at once (the automatic shift goes down)
+      if (m >= 2 && getProgress().settings.auto) {
+        easeNow();
+        const easier = makeRound(
+          stop.skill,
+          tuneFor(getProgress(), stopIndex),
+          Math.random,
+          weakWordIds(getProgress()),
+        );
+        setRound([...round.slice(0, step + 1), ...easier.slice(step + 1)]);
+      }
       setStep(step + 1);
       return;
     }
@@ -73,7 +96,7 @@ function StopGame({ stopIndex }: { stopIndex: number }) {
             />
           ))}
         </div>
-        <span className="top-spacer" />
+        <DifficultyBadge />
       </div>
 
       {phase === "hello" && (
@@ -109,8 +132,7 @@ function StopGame({ stopIndex }: { stopIndex: number }) {
             <Pic name={stop.gift} className="gift-pic" />
             <span>{reward.first ? `Подарок: ${stop.giftName.toLowerCase()}` : stop.giftName}</span>
           </div>
-          {reward.level === "up" && <p className="level-note">Задания станут чуть интереснее!</p>}
-          <Outro stop={stop} levelUp={reward.level === "up"} />
+          <Outro stop={stop} />
           <button
             type="button"
             className="big-btn next-btn"
@@ -132,10 +154,13 @@ const residentPic = (stop: Stop, pose: string) => stop.resident + (pose ? `-${po
 
 /** The resident and the fox talk before the tasks: voiced lines, poses change with each line. */
 function Hello({ stop, onHelp }: { stop: Stop; onHelp: () => void }) {
-  const keys = stop.intro.map((_, i) => introKey(stop.id, i));
+  // 5–6-year-olds get the stop's no-arithmetic version (another skill, other words)
+  const young = getProgress().settings.level === 1 && stop.young;
+  const intro = young ? young.intro : stop.intro;
+  const keys = intro.map((_, i) => introKey(young ? youngId(stop.id) : stop.id, i));
   const { index, finished, next } = useDialogue(keys);
-  const line = stop.intro[index];
-  const seen = stop.intro.slice(0, index + 1);
+  const line = intro[index];
+  const seen = intro.slice(0, index + 1);
   const resPose = seen.filter((l) => l.who === "res").pop()?.pose ?? "sad";
   const foxPose = seen.flatMap((l) => (l.who === "fox" ? [l.pose] : [])).pop() ?? "wave";
 
@@ -176,8 +201,8 @@ function Hello({ stop, onHelp }: { stop: Stop; onHelp: () => void }) {
 }
 
 /** After the star: the resident thanks, the fox answers. */
-function Outro({ stop, levelUp }: { stop: Stop; levelUp: boolean }) {
-  const keys = [outroKey(stop.id, 0), ...(levelUp ? ["level-up"] : []), outroKey(stop.id, 1)];
+function Outro({ stop }: { stop: Stop }) {
+  const keys = [outroKey(stop.id, 0), outroKey(stop.id, 1)];
   const { index, next } = useDialogue(keys, { delay: 700 });
   const line = stop.outro[index === keys.length - 1 ? 1 : 0];
   return (

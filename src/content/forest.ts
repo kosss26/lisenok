@@ -31,12 +31,18 @@ export type Stop = {
   /** voiced dialogue before the tasks and after the star */
   intro: Line[];
   outro: Line[];
-  /** position of the clearing on the forest picture, % */
+  /** position of the clearing on its forest picture, % (set from PATH by the order on the path) */
   x: number;
   y: number;
+  /** 1 = the first forest picture (entrance), 2 = the deep forest above it */
+  part: 1 | 2;
+  /** for 5–6-year-olds (no arithmetic): another skill and the words that go with it */
+  young?: { skill: Skill; intro: Line[] };
 };
 
-export const FOREST: Stop[] = [
+type StopDef = Omit<Stop, "x" | "y" | "part">;
+
+const DEFS: StopDef[] = [
   {
     id: "hedgehog",
     resident: "hedgehog",
@@ -54,8 +60,6 @@ export const FOREST: Stop[] = [
       { who: "res", pose: "happy", text: "Спасибо, дружок! Держи звёздочку и золотой жёлудь!" },
       { who: "fox", pose: "cheer", text: "Ура! Идём дальше по тропинке!" },
     ],
-    x: 71.5,
-    y: 79,
   },
   {
     id: "squirrel",
@@ -78,8 +82,6 @@ export const FOREST: Stop[] = [
       },
       { who: "fox", pose: "cheer", text: "Теперь белочке хватит запасов на всю зиму!" },
     ],
-    x: 30,
-    y: 73.5,
   },
   {
     id: "hare",
@@ -102,8 +104,6 @@ export const FOREST: Stop[] = [
       { who: "res", pose: "happy", text: "Как здорово! Возьми звёздочку и клевер на удачу!" },
       { who: "fox", pose: "cheer", text: "Все буквы на месте. Здорово получилось!" },
     ],
-    x: 63,
-    y: 60,
   },
   {
     id: "owl",
@@ -134,8 +134,6 @@ export const FOREST: Stop[] = [
       },
       { who: "fox", pose: "cheer", text: "Сова говорит, что ты настоящий читатель!" },
     ],
-    x: 32.5,
-    y: 55.5,
   },
   {
     id: "bear",
@@ -154,12 +152,22 @@ export const FOREST: Stop[] = [
       { who: "fox", pose: "point", text: "Это легко! Надо просто сложить." },
       { who: "res", pose: "", text: "Помоги мне сложить горшочки!" },
     ],
+    young: {
+      skill: "count",
+      intro: [
+        {
+          who: "res",
+          pose: "sad",
+          text: "Привет! Я медвежонок. Мне принесли мёд, а сколько горшочков?",
+        },
+        { who: "fox", pose: "point", text: "Посчитаем вместе, по одному!" },
+        { who: "res", pose: "", text: "Помоги мне посчитать горшочки!" },
+      ],
+    },
     outro: [
       { who: "res", pose: "happy", text: "Вот это да! Держи звёздочку и гроздь рябины!" },
       { who: "fox", pose: "cheer", text: "Мишка будет пить чай с мёдом. Идём дальше!" },
     ],
-    x: 66,
-    y: 36.5,
   },
   {
     id: "beaver",
@@ -182,8 +190,6 @@ export const FOREST: Stop[] = [
       },
       { who: "fox", pose: "cheer", text: "Какая крепкая плотина получилась!" },
     ],
-    x: 43,
-    y: 27.5,
   },
   {
     id: "badger",
@@ -202,12 +208,22 @@ export const FOREST: Stop[] = [
       { who: "fox", pose: "point", text: "Чтобы узнать, сколько осталось, надо вычесть!" },
       { who: "res", pose: "", text: "Помоги мне посчитать, сколько яблок осталось!" },
     ],
+    young: {
+      skill: "compare",
+      intro: [
+        {
+          who: "res",
+          pose: "sad",
+          text: "Привет! Я барсук. Я раскладываю яблоки, где же их больше?",
+        },
+        { who: "fox", pose: "think", text: "Давай сравним! Это совсем не трудно." },
+        { who: "res", pose: "", text: "Покажи, где больше, а где меньше!" },
+      ],
+    },
     outro: [
       { who: "res", pose: "happy", text: "Спасибо! Возьми звёздочку и ракушку улитки." },
       { who: "fox", pose: "cheer", text: "Теперь барсук знает, сколько у него яблок." },
     ],
-    x: 63,
-    y: 20,
   },
   {
     id: "mouse",
@@ -230,8 +246,6 @@ export const FOREST: Stop[] = [
       { who: "res", pose: "happy", text: "Пи-пи, спасибо! Вот звёздочка и полосатый камешек." },
       { who: "fox", pose: "cheer", text: "Слышишь? Мышка пищит от радости!" },
     ],
-    x: 47,
-    y: 15.5,
   },
   {
     id: "frog",
@@ -254,14 +268,271 @@ export const FOREST: Stop[] = [
       {
         who: "res",
         pose: "happy",
-        text: "Ква-ква, ура! Это последняя звёздочка леса! И кленовый листок на память.",
+        text: "Ква-ква, ура! Вот тебе звёздочка и кленовый листок на память.",
+      },
+      { who: "fox", pose: "cheer", text: "Половина леса уже сияет! Идём дальше, в чащу!" },
+    ],
+  },
+  // ---------- second visits: the deep forest ----------
+  {
+    id: "hedgehog-2",
+    resident: "hedgehog",
+    name: "Ёжик",
+    skill: "letters",
+    gift: "apple",
+    giftName: "Румяное яблоко",
+    voice: { speaker: "baya", pitch: 1.08 },
+    intro: [
+      {
+        who: "res",
+        pose: "sad",
+        text: "Это снова я, ёжик! Я нёс яблоки, и буквы опять рассыпались!",
+      },
+      { who: "fox", pose: "wave", text: "Ничего, ёжик, мы уже знаем, как помочь." },
+      { who: "res", pose: "", text: "Послушай и найди нужную букву!" },
+    ],
+    outro: [
+      { who: "res", pose: "happy", text: "Ура! Держи звёздочку и румяное яблоко!" },
+      { who: "fox", pose: "cheer", text: "Вкусно пахнет! Идём дальше!" },
+    ],
+  },
+  {
+    id: "squirrel-2",
+    resident: "squirrel",
+    name: "Белка",
+    skill: "count",
+    gift: "raspberry",
+    giftName: "Ягодка малины",
+    voice: { speaker: "kseniya", pitch: 1.1 },
+    intro: [
+      {
+        who: "res",
+        pose: "sad",
+        text: "Привет-привет! Я собрала ягоды и шишки, а сколько их, не знаю!",
+      },
+      { who: "fox", pose: "point", text: "Посчитаем вместе, белочка!" },
+      { who: "res", pose: "", text: "Посчитай мои запасы, пожалуйста!" },
+    ],
+    outro: [
+      { who: "res", pose: "happy", text: "Как здорово! Вот звёздочка и ягодка малины!" },
+      { who: "fox", pose: "cheer", text: "Белочка теперь всё знает про свои запасы!" },
+    ],
+  },
+  {
+    id: "owl-2",
+    resident: "owl",
+    name: "Сова",
+    skill: "read",
+    gift: "lantern",
+    giftName: "Ночной фонарик",
+    voice: { speaker: "kseniya", pitch: 0.94 },
+    intro: [
+      { who: "res", pose: "sad", text: "Угу! В чаще темно, и я не вижу, где какое слово." },
+      { who: "fox", pose: "read", text: "Мой друг прочитает слова даже в темноте!" },
+      { who: "res", pose: "", text: "Прочитай слово и найди картинку." },
+    ],
+    outro: [
+      { who: "res", pose: "happy", text: "Угу-угу! Вот звёздочка и ночной фонарик!" },
+      { who: "fox", pose: "cheer", text: "С фонариком в чаще совсем не страшно!" },
+    ],
+  },
+  {
+    id: "mouse-2",
+    resident: "mouse",
+    name: "Мышка",
+    skill: "compare",
+    gift: "cheese",
+    giftName: "Кусочек сыра",
+    voice: { speaker: "kseniya", pitch: 1.24 },
+    intro: [
+      { who: "res", pose: "sad", text: "Пи-пи! Мы с братьями делим сыр и спорим, у кого больше!" },
+      { who: "fox", pose: "think", text: "Давай сравним, и спор закончится." },
+      { who: "res", pose: "", text: "Покажи, где больше, а где меньше!" },
+    ],
+    outro: [
+      { who: "res", pose: "happy", text: "Пи-пи, больше не спорим! Вот звёздочка и кусочек сыра!" },
+      { who: "fox", pose: "cheer", text: "Как хорошо, когда всё честно!" },
+    ],
+  },
+  {
+    id: "hare-2",
+    resident: "hare",
+    name: "Зайчик",
+    skill: "build",
+    gift: "carrot",
+    giftName: "Сладкая морковка",
+    voice: { speaker: "baya", pitch: 1.16 },
+    intro: [
+      { who: "res", pose: "sad", text: "Привет! Я прыгал по чаще, и мои слова опять рассыпались!" },
+      { who: "fox", pose: "think", text: "Соберём их, буква за буквой." },
+      { who: "res", pose: "", text: "Поставь буквы по порядку!" },
+    ],
+    outro: [
+      { who: "res", pose: "happy", text: "Ура! Возьми звёздочку и сладкую морковку!" },
+      { who: "fox", pose: "cheer", text: "Зайчик скачет от радости!" },
+    ],
+  },
+  {
+    id: "beaver-2",
+    resident: "beaver",
+    name: "Бобр",
+    skill: "syllables",
+    gift: "boat",
+    giftName: "Деревянная лодочка",
+    voice: { speaker: "eugene", pitch: 1.03 },
+    intro: [
+      { who: "res", pose: "sad", text: "Привет! Я строю мостик через пруд, а слоги перепутались!" },
+      { who: "fox", pose: "think", text: "Сложим мостик из слогов вместе!" },
+      { who: "res", pose: "", text: "Собери слово из слогов!" },
+    ],
+    outro: [
+      {
+        who: "res",
+        pose: "happy",
+        text: "Какой крепкий мостик! Вот звёздочка и деревянная лодочка!",
+      },
+      { who: "fox", pose: "cheer", text: "Теперь можно плавать по пруду!" },
+    ],
+  },
+  {
+    id: "badger-2",
+    resident: "badger",
+    name: "Барсук",
+    skill: "sub",
+    gift: "bell",
+    giftName: "Звонкий колокольчик",
+    voice: { speaker: "aidar", pitch: 0.94 },
+    intro: [
+      {
+        who: "res",
+        pose: "sad",
+        text: "Привет! Я угощал гостей грибами. Сколько грибов осталось?",
+      },
+      { who: "fox", pose: "point", text: "Узнаем! Надо вычесть, сколько съели." },
+      { who: "res", pose: "", text: "Помоги мне посчитать, сколько осталось!" },
+    ],
+    young: {
+      skill: "compare",
+      intro: [
+        { who: "res", pose: "sad", text: "Привет! Я раскладываю грибы и не пойму, где их больше." },
+        { who: "fox", pose: "think", text: "Давай посмотрим внимательно и сравним!" },
+        { who: "res", pose: "", text: "Покажи, где больше, а где меньше!" },
+      ],
+    },
+    outro: [
+      { who: "res", pose: "happy", text: "Спасибо! Вот звёздочка и звонкий колокольчик!" },
+      { who: "fox", pose: "cheer", text: "Динь-динь! Идём дальше!" },
+    ],
+  },
+  {
+    id: "bear-2",
+    resident: "bear",
+    name: "Медвежонок",
+    skill: "add",
+    gift: "honey",
+    giftName: "Бочонок мёда",
+    voice: { speaker: "aidar", pitch: 1.0 },
+    intro: [
+      {
+        who: "res",
+        pose: "sad",
+        text: "Привет! Пчёлы принесли мне ещё мёда. Сколько стало всего?",
+      },
+      { who: "fox", pose: "point", text: "Сложим и узнаем!" },
+      { who: "res", pose: "", text: "Помоги мне сложить!" },
+    ],
+    young: {
+      skill: "count",
+      intro: [
+        { who: "res", pose: "sad", text: "Привет! Пчёлы принесли мне мёд и ягоды. Сколько их?" },
+        { who: "fox", pose: "point", text: "Посчитаем вместе, по одному!" },
+        { who: "res", pose: "", text: "Помоги мне посчитать!" },
+      ],
+    },
+    outro: [
+      { who: "res", pose: "happy", text: "Вот это да! Держи звёздочку и бочонок мёда!" },
+      { who: "fox", pose: "cheer", text: "Осталась последняя полянка! Скорее к лягушонку!" },
+    ],
+  },
+  {
+    id: "frog-2",
+    resident: "frog",
+    name: "Лягушонок",
+    skill: "sentence",
+    gift: "crown",
+    giftName: "Лесная корона",
+    voice: { speaker: "eugene", pitch: 1.1 },
+    intro: [
+      { who: "res", pose: "sad", text: "Ква! Мне прислали самые длинные записки во всём лесу!" },
+      { who: "fox", pose: "read", text: "Мой друг справится. Он уже так много прочитал!" },
+      { who: "res", pose: "", text: "Прочитай записку и найди ответ. Ква!" },
+    ],
+    outro: [
+      {
+        who: "res",
+        pose: "happy",
+        text: "Ква-ква, ура! Это последняя звёздочка леса! И лесная корона для тебя.",
       },
       { who: "fox", pose: "cheer", text: "Это была последняя звёздочка! Лес снова сияет!" },
     ],
-    x: 60,
-    y: 10,
   },
 ];
+
+/**
+ * The order on the path. Arithmetic comes only in the deep forest (and never for 5–6-year-olds:
+ * those stops use `young`). Difficulty grows slowly from the first stop to the last.
+ */
+const ORDER = [
+  "hedgehog",
+  "squirrel",
+  "owl",
+  "mouse",
+  "hare",
+  "beaver",
+  "hedgehog-2",
+  "squirrel-2",
+  "frog",
+  "owl-2",
+  "mouse-2",
+  "hare-2",
+  "bear",
+  "beaver-2",
+  "badger",
+  "badger-2",
+  "bear-2",
+  "frog-2",
+];
+/** clearings on the two forest pictures, in path order (% of the picture) */
+const PATH: { part: 1 | 2; x: number; y: number }[] = [
+  { part: 1, x: 71.5, y: 79 },
+  { part: 1, x: 30, y: 73.5 },
+  { part: 1, x: 63, y: 60 },
+  { part: 1, x: 32.5, y: 55.5 },
+  { part: 1, x: 66, y: 36.5 },
+  { part: 1, x: 43, y: 27.5 },
+  { part: 1, x: 63, y: 20 },
+  { part: 1, x: 47, y: 15.5 },
+  { part: 1, x: 60, y: 10 },
+  { part: 2, x: 42.5, y: 90.3 },
+  { part: 2, x: 59, y: 79 },
+  { part: 2, x: 41, y: 70.8 },
+  { part: 2, x: 54.7, y: 61.3 },
+  { part: 2, x: 38.5, y: 54.2 },
+  { part: 2, x: 40.3, y: 45.7 },
+  { part: 2, x: 54.7, y: 38.6 },
+  { part: 2, x: 41, y: 31.7 },
+  { part: 2, x: 56.8, y: 24.9 },
+];
+export const FOREST: Stop[] = ORDER.map((id, i) => {
+  const def = DEFS.find((d) => d.id === id)!;
+  return { ...def, ...PATH[i] };
+});
+
+/** where a clearing is on the whole (two pictures high) forest: x %, y % of the full height */
+export const onPath = (s: { part: 1 | 2; x: number; y: number }) => ({
+  x: s.x,
+  y: s.part === 1 ? 50 + s.y / 2 : s.y / 2,
+});
 
 export const WORLDS = [
   { id: "forest", name: "Лес", x: 50, y: 84, open: true },

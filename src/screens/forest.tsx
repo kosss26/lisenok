@@ -1,22 +1,25 @@
-import { useEffect, useState, type CSSProperties } from "react";
+import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties } from "react";
 import { useNavigate } from "@tanstack/react-router";
-import { FOREST } from "../content/forest";
-import { BackButton, Fox, ParentsButton, Pic, Scene, StarCount } from "../components/kit";
+import { FOREST, onPath } from "../content/forest";
+import { BackButton, Fox, ParentsButton, Pic, StarCount } from "../components/kit";
+import { art } from "../game/assets";
 import { say, sfx } from "../game/audio";
+import { DifficultyBadge } from "../components/difficulty";
 import { nextStopIndex, starsIn, stopOpen, update, useProgress } from "../game/progress";
 
 type Pt = { x: number; y: number };
 /** Where the fox stood when the forest was last shown (this launch) — it walks on from there. */
 let lastFox: Pt | null = null;
-const ENTRANCE: Pt = { x: 50, y: 99 };
+/** the forest is two pictures high (entrance below, deep forest above); points are % of all of it */
+const ENTRANCE: Pt = { x: 50, y: 99.5 };
 const reduced = () =>
   typeof matchMedia !== "undefined" && matchMedia("(prefers-reduced-motion: reduce)").matches;
 
 /** The fox waits on the path most of the way from the last solved stop to the next one. */
 function foxSpot(next: number): Pt {
-  const to = FOREST[Math.min(next, FOREST.length - 1)];
-  const from = next > 0 ? FOREST[next - 1] : ENTRANCE;
-  return { x: from.x + (to.x - from.x) * 0.62, y: from.y + (to.y - from.y) * 0.62 + 3 };
+  const to = onPath(FOREST[Math.min(next, FOREST.length - 1)]);
+  const from = next > 0 ? onPath(FOREST[next - 1]) : ENTRANCE;
+  return { x: from.x + (to.x - from.x) * 0.62, y: from.y + (to.y - from.y) * 0.62 + 1.5 };
 }
 /** Farther stops (higher on the picture) are drawn smaller, like in perspective. */
 const depth = (y: number) => Math.min(1, 0.68 + 0.32 * (y / 80));
@@ -65,13 +68,43 @@ export function Forest() {
   const flipped = target.x > FOREST[Math.min(next, FOREST.length - 1)].x;
   const goingLeft = target.x < start.x;
 
+  // the path is taller than the screen: open it where the fox is, scroll up to the sky to celebrate
+  const scroller = useRef<HTMLDivElement | null>(null);
+  useLayoutEffect(() => {
+    const el = scroller.current;
+    if (!el) return;
+    const tall = el.scrollHeight;
+    el.scrollTop = Math.max(0, (target.y / 100) * tall - el.clientHeight * 0.62);
+    // only when the screen opens
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+  useEffect(() => {
+    if (!celebrate) return;
+    const t = window.setTimeout(
+      () => scroller.current?.scrollTo({ top: 0, behavior: reduced() ? "auto" : "smooth" }),
+      400,
+    );
+    return () => window.clearTimeout(t);
+  }, [celebrate]);
+
   return (
-    <Scene
-      bg="bg-forest"
-      className={`forest-screen ${celebrate ? "is-night" : ""}`}
-      boxed={
-        <>
-          <ForestAmbient />
+    <div className={`scene forest-screen ${celebrate ? "is-night" : ""}`}>
+      <div className="forest-scroll" ref={scroller}>
+        <div className="forest-tall">
+          <img
+            className="forest-bg forest-bg-2"
+            src={art("bg-forest-2")}
+            alt=""
+            draggable={false}
+          />
+          <img className="forest-bg forest-bg-1" src={art("bg-forest")} alt="" draggable={false} />
+          <div className="forest-seam" aria-hidden />
+          <div className="forest-half forest-half-1">
+            <ForestAmbient />
+          </div>
+          <div className="forest-half forest-half-2">
+            <ForestAmbient stream={false} />
+          </div>
           {FOREST.map((stop, i) => {
             const open = stopOpen(p, i);
             const done = Boolean(p.done[stop.id]);
@@ -91,8 +124,8 @@ export function Forest() {
                 ].join(" ")}
                 style={
                   {
-                    left: `${stop.x}%`,
-                    top: `${stop.y}%`,
+                    left: `${onPath(stop).x}%`,
+                    top: `${onPath(stop).y}%`,
                     "--s": depth(stop.y),
                     "--d": `${(i * 0.37) % 2}s`,
                   } as CSSProperties
@@ -141,59 +174,61 @@ export function Forest() {
                 className="sky-star-track"
                 style={
                   {
-                    "--from": `translate(${stop.x}%, ${stop.y}%)`,
-                    "--to": `translate(${10 + i * 10}%, ${16 + (i % 2) * 3 + Math.abs(4 - i) * 1.3}%)`,
-                    "--delay": `${0.2 + i * 0.16}s`,
+                    "--from": `translate(${onPath(stop).x}%, ${onPath(stop).y}%)`,
+                    "--to": `translate(${8 + (i % 9) * 10.5}%, ${4 + Math.floor(i / 9) * 4 + (i % 2) * 1.5 + Math.abs(4 - (i % 9)) * 0.6}%)`,
+                    "--delay": `${0.6 + i * 0.12}s`,
                   } as CSSProperties
                 }
               >
                 <Pic name="star" className="sky-star" />
               </div>
             ))}
-        </>
-      }
-    >
-      <div className="top-bar">
-        <BackButton to="/map" label="На карту" />
-        <StarCount n={starsIn(p)} total={FOREST.length} />
-        <ParentsButton />
-      </div>
-      {allDone && !celebrate && (
-        <button
-          type="button"
-          className="glade-btn"
-          onClick={() => {
-            void sfx("step");
-            void navigate({ to: "/glade" });
-          }}
-        >
-          <Pic name="mushroom" className="glade-btn-pic" />
-          <span>Лесная полянка</span>
-        </button>
-      )}
-      {celebrate && (
-        <div className="celebrate" role="dialog" aria-label="Лес пройден">
-          {celebrateCard && (
-            <div className="celebrate-card">
-              <Fox pose="cheer" className="celebrate-fox" />
-              <h2>Звёзды вернулись на небо!</h2>
-              <p>Весь лес сияет. Скоро лисёнок отправится к морю.</p>
-              <button
-                type="button"
-                className="big-btn"
-                onClick={() => {
-                  void sfx("tap");
-                  update((s) => ({ ...s, forestCelebrated: true }));
-                  void say(["glade-open"]);
-                }}
-              >
-                Ура!
-              </button>
-            </div>
-          )}
         </div>
-      )}
-    </Scene>
+      </div>
+      <div className="scene-layer">
+        <div className="top-bar">
+          <BackButton to="/map" label="На карту" />
+          <StarCount n={starsIn(p)} total={FOREST.length} />
+          <DifficultyBadge pick />
+          <ParentsButton />
+        </div>
+        {allDone && !celebrate && (
+          <button
+            type="button"
+            className="glade-btn"
+            onClick={() => {
+              void sfx("step");
+              void navigate({ to: "/glade" });
+            }}
+          >
+            <Pic name="mushroom" className="glade-btn-pic" />
+            <span>Лесная полянка</span>
+          </button>
+        )}
+        {celebrate && (
+          <div className="celebrate" role="dialog" aria-label="Лес пройден">
+            {celebrateCard && (
+              <div className="celebrate-card">
+                <Fox pose="cheer" className="celebrate-fox" />
+                <h2>Звёзды вернулись на небо!</h2>
+                <p>Весь лес сияет. Скоро лисёнок отправится к морю.</p>
+                <button
+                  type="button"
+                  className="big-btn"
+                  onClick={() => {
+                    void sfx("tap");
+                    update((s) => ({ ...s, forestCelebrated: true }));
+                    void say(["glade-open"]);
+                  }}
+                >
+                  Ура!
+                </button>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+    </div>
   );
 }
 
@@ -227,10 +262,10 @@ const FLIES = [
   [52, 52],
   [6, 46],
 ];
-function ForestAmbient() {
+function ForestAmbient({ stream = true }: { stream?: boolean }) {
   return (
     <div className="ambient" aria-hidden>
-      {SPARKLES.map(([x, y], i) => (
+      {(stream ? SPARKLES : []).map(([x, y], i) => (
         <span
           key={`s${i}`}
           className="sparkle"

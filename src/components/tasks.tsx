@@ -470,7 +470,7 @@ function MathCard({
   visual: Extract<Visual, { type: "math" }>;
   picked: string | null;
 }) {
-  const { a, b, op, pic } = visual;
+  const { a, b, op, pic, c, op2 } = visual;
   return (
     <div className={`card card-math ${pic ? "with-pics" : ""}`}>
       {pic && (
@@ -501,6 +501,12 @@ function MathCard({
         <span>{a}</span>
         <span className="math-op">{op === "+" ? "+" : "−"}</span>
         <span>{b}</span>
+        {c !== undefined && (
+          <>
+            <span className="math-op">{op2 === "+" ? "+" : "−"}</span>
+            <span>{c}</span>
+          </>
+        )}
         <span className="math-op">=</span>
         <span className={`math-answer ${picked ? "is-filled" : ""}`}>{picked ?? "?"}</span>
       </div>

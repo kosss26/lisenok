@@ -5,7 +5,16 @@
  */
 import { useSyncExternalStore } from "react";
 import { FOREST, type Skill } from "../content/forest.ts";
-import type { Level } from "./tasks.ts";
+import type { Level, Tune } from "./tasks.ts";
+
+/** «легко / средне / трудно» on top of the age level (parents' corner or the child's own picker) */
+export type Difficulty = "easy" | "medium" | "hard";
+export const DIFFICULTIES: Difficulty[] = ["easy", "medium", "hard"];
+export const DIFFICULTY_NAMES: Record<Difficulty, string> = {
+  easy: "Легко",
+  medium: "Средне",
+  hard: "Трудно",
+};
 
 export const STORAGE_KEY = "lisenok:progress";
 
@@ -15,7 +24,9 @@ export type WordStat = { seen: number; miss: number; hints: number; streak: numb
 export type Settings = {
   name: string | null;
   level: Level;
+  /** adapt the difficulty to how the child is doing (never changes the age level) */
   auto: boolean;
+  difficulty: Difficulty;
   /** minutes per day, 0 = no limit */
   limit: number;
   volume: { voice: number; sounds: number; music: number; forest: number };
@@ -25,8 +36,10 @@ export type Progress = {
   /** stop id -> how many times solved */
   done: Record<string, number>;
   gifts: string[];
-  /** mistakes in the last stops (for auto level) */
+  /** mistakes in the last stops */
   recent: number[];
+  /** automatic shift of the difficulty inside the age level, from −0.45 to +0.15 (see grade()) */
+  adapt: number;
   skills: Partial<Record<Skill, SkillStat>>;
   /** word id -> stats (adaptation at the word level, details in the parents' corner) */
   words: Record<string, WordStat>;
@@ -45,12 +58,14 @@ const DEFAULT: Progress = {
   done: {},
   gifts: [],
   recent: [],
+  adapt: 0,
   skills: {},
   words: {},
   settings: {
     name: null,
     level: 1,
     auto: true,
+    difficulty: "medium",
     limit: 0,
     volume: { voice: 1, sounds: 0.8, music: 0.5, forest: 0.6 },
   },
@@ -147,42 +162,57 @@ export function recordTask(skill: Skill, mistakes: number, hinted: boolean, word
   });
 }
 
+// ---------- difficulty ----------
+const SHIFT: Record<Difficulty, number> = { easy: -0.25, medium: 0, hard: 0.25 };
+/** how much of the age level the path covers: the last stop at «средне» reaches 0.7 */
+const PATH_SPAN = 0.7;
+export const ADAPT_MIN = -0.45;
+export const ADAPT_MAX = 0.15;
+
 /**
- * A stop is solved: star + gift, and the automatic level check.
- * Two clean stops in a row -> a bit harder; two hard stops in a row -> a bit easier.
+ * Difficulty inside the age level (0 = easiest, 1 = hardest) for a stop on the path:
+ * it rises slowly and evenly from the first stop to the last, the «легко / средне / трудно»
+ * choice moves it down or up, and the automatic shift follows how the child is doing.
  */
-export function finishStop(
-  stopId: string,
-  mistakes: number,
-): { first: boolean; level: "up" | "down" | null } {
+export function grade(p: Progress, stopIndex: number, stops = FOREST.length): number {
+  const path = stops > 1 ? Math.min(1, stopIndex / (stops - 1)) : 0;
+  const auto = p.settings.auto ? p.adapt : 0;
+  const g = PATH_SPAN * path + SHIFT[p.settings.difficulty] + auto;
+  return Math.round(Math.max(0, Math.min(1, g)) * 100) / 100;
+}
+/** the glade (practice after the forest): the middle of the age level */
+export const gladeGrade = (p: Progress) =>
+  Math.max(0, Math.min(1, 0.5 + SHIFT[p.settings.difficulty] + (p.settings.auto ? p.adapt : 0)));
+export const tuneFor = (p: Progress, stopIndex: number): Tune => ({
+  level: p.settings.level,
+  g: grade(p, stopIndex),
+});
+
+/**
+ * Slow up, quick down: a clean stop adds a little, a hard one takes off a lot at once.
+ * The age level itself is never changed automatically (a 5-year-old never gets arithmetic).
+ */
+export function nextAdapt(adapt: number, mistakes: number) {
+  const step = mistakes === 0 ? 0.04 : mistakes <= 1 ? 0 : mistakes <= 3 ? -0.1 : -0.2;
+  return Math.round(Math.max(ADAPT_MIN, Math.min(ADAPT_MAX, adapt + step)) * 100) / 100;
+}
+/** during a stop: a task that needed 2+ tries makes the rest of the round easier right away */
+export function easeNow(by = 0.1) {
+  update((p) => ({ ...p, adapt: Math.max(ADAPT_MIN, Math.round((p.adapt - by) * 100) / 100) }));
+}
+
+/** A stop is solved: star + gift, and the automatic difficulty shift. */
+export function finishStop(stopId: string, mistakes: number): { first: boolean } {
   const stop = FOREST.find((s) => s.id === stopId);
   const first = !state.done[stopId];
-  let change: "up" | "down" | null = null;
-  update((p) => {
-    const recent = [...p.recent, mistakes].slice(-3);
-    let level = p.settings.level;
-    let keep = recent;
-    if (p.settings.auto && recent.length >= 2) {
-      const [a, b] = recent.slice(-2);
-      if (a === 0 && b === 0 && level < 3) {
-        level = (level + 1) as Level;
-        change = "up";
-        keep = [];
-      } else if (a >= 3 && b >= 3 && level > 1) {
-        level = (level - 1) as Level;
-        change = "down";
-        keep = [];
-      }
-    }
-    return {
-      ...p,
-      done: { ...p.done, [stopId]: (p.done[stopId] ?? 0) + 1 },
-      gifts: stop && !p.gifts.includes(stop.gift) ? [...p.gifts, stop.gift] : p.gifts,
-      recent: keep,
-      settings: { ...p.settings, level },
-    };
-  });
-  return { first, level: change };
+  update((p) => ({
+    ...p,
+    done: { ...p.done, [stopId]: (p.done[stopId] ?? 0) + 1 },
+    gifts: stop && !p.gifts.includes(stop.gift) ? [...p.gifts, stop.gift] : p.gifts,
+    recent: [...p.recent, mistakes].slice(-3),
+    adapt: p.settings.auto ? nextAdapt(p.adapt, mistakes) : p.adapt,
+  }));
+  return { first };
 }
 
 /** A clean answer without a hint adds to the streak; a mistake or a hint resets it. */
@@ -235,7 +265,7 @@ export function addTenMinutes() {
 }
 
 export const LEVEL_NAMES: Record<Level, string> = {
-  1: "5–6 лет: буквы, звуки, счёт до 10",
-  2: "6–7 лет: слоги, слова, счёт до 20",
+  1: "5–6 лет: буквы, звуки, счёт до 10, без примеров",
+  2: "6–7 лет: слоги, слова, сложение до 20",
   3: "8–9 лет: предложения, задачи до 100",
 };

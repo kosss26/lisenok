@@ -6,6 +6,8 @@ import { WORDS } from "../content/words";
 import { say } from "../game/audio";
 import {
   LEVEL_NAMES,
+  DIFFICULTIES,
+  DIFFICULTY_NAMES,
   resetProgress,
   setSettings,
   starsIn,
@@ -90,7 +92,7 @@ export function Parents() {
               </select>
             </label>
             <div className="field">
-              <span>Уровень заданий</span>
+              <span>Возраст и уровень</span>
               <div className="levels">
                 {([1, 2, 3] as Level[]).map((l) => (
                   <button
@@ -104,6 +106,26 @@ export function Parents() {
                 ))}
               </div>
             </div>
+            <div className="field">
+              <span>Сложность</span>
+              <div className="levels diff-levels">
+                {DIFFICULTIES.map((d) => (
+                  <button
+                    key={d}
+                    type="button"
+                    data-difficulty={d}
+                    className={`level-card ${s.difficulty === d ? "is-active" : ""}`}
+                    onClick={() => setSettings({ difficulty: d })}
+                  >
+                    {DIFFICULTY_NAMES[d]}
+                  </button>
+                ))}
+              </div>
+              <small className="field-note">
+                Ребёнок тоже может выбрать её сам — звёздочки вверху экрана леса. Задания
+                усложняются постепенно от первой остановки к последней.
+              </small>
+            </div>
             <label className="switch">
               <input
                 type="checkbox"
@@ -111,9 +133,10 @@ export function Parents() {
                 onChange={(e) => setSettings({ auto: e.target.checked })}
               />
               <span>
-                Подстраивать уровень автоматически
+                Подстраивать сложность автоматически
                 <small>
-                  Две остановки без ошибок — задания сложнее, две трудные подряд — проще.
+                  Без ошибок — чуть сложнее (медленно), после ошибок — сразу проще. Возраст не
+                  меняется: в 5–6 лет примеров на сложение и вычитание нет.
                 </small>
               </span>
             </label>
