@@ -15,6 +15,14 @@ createRoot(document.getElementById("root")!).render(
   </StrictMode>,
 );
 
+// Register after the page has loaded. The format check above is awaited at the top level, so the
+// "load" event may already have fired by the time this line runs: then register right away.
 if (import.meta.env.PROD && "serviceWorker" in navigator) {
-  window.addEventListener("load", () => void navigator.serviceWorker.register(swUrl()));
+  const register = () => {
+    void navigator.serviceWorker.register(swUrl());
+    // pictures and sounds are cached after the worker starts; ask it to (re)start the filling
+    void navigator.serviceWorker.ready.then((r) => r.active?.postMessage("fill"));
+  };
+  if (document.readyState === "complete") register();
+  else window.addEventListener("load", register, { once: true });
 }

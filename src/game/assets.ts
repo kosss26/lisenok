@@ -5,10 +5,14 @@ import { ASSET_VERSIONS } from "./asset-versions";
  * WebP / MP3 originals (tools/encode-media.py). The browser picks once, before the first screen.
  */
 export const formats = { avif: false, opus: false };
+/** set when this browser claimed Opus but could not decode it (audio.ts): MP3 on the next visits too,
+ * and the service worker (registered as sw.js?aud=mp3) then caches the MP3 files for offline play */
+export const NO_OPUS = "lisenok:no-opus";
 
 export async function detectFormats() {
   if (!import.meta.env.PROD) return;
-  formats.opus = new Audio().canPlayType('audio/ogg; codecs="opus"') !== "";
+  formats.opus =
+    new Audio().canPlayType('audio/ogg; codecs="opus"') !== "" && !localStorage.getItem(NO_OPUS);
   formats.avif = await new Promise<boolean>((resolve) => {
     const img = new Image();
     img.onload = () => resolve(img.width > 0);

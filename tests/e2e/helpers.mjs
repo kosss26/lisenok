@@ -16,6 +16,8 @@ export const STOPS = [
   "frog",
 ];
 export const KEY = "lisenok:progress";
+/** a picture in any shipped format: AVIF in production where supported, WebP otherwise */
+export const artRe = (name) => new RegExp(`/art/${name}\\.(avif|webp)(\\?|$)`);
 
 /** `t` is the node:test context: the browser closes even when an assertion fails. */
 export async function openPhone(t, { progress, path = "", offline = false } = {}) {
@@ -35,7 +37,9 @@ export async function openPhone(t, { progress, path = "", offline = false } = {}
       const orig = window.fetch;
       window.fetch = (u, ...a) => {
         const s = String(u);
-        if (s.includes("/voice/")) window.__voice.push(s.split("/voice/")[1].split(".mp3")[0]);
+        // production builds ask for Opus (.ogg) where it plays, MP3 elsewhere
+        const m = s.match(/\/voice\/([^/?]+)\.(mp3|ogg)/);
+        if (m) window.__voice.push(m[1]);
         return orig(u, ...a);
       };
       if (seed && !sessionStorage.getItem("seeded")) {

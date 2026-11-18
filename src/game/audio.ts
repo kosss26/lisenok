@@ -3,7 +3,7 @@
  * (voice / sounds / music — set in the parents' corner). Voice lines play as sequences
  * ("Найди букву" + "эм"); a new sequence cuts the previous one. Music ducks under the voice.
  */
-import { musicUrl, sfxUrl, voiceUrl } from "./assets";
+import { NO_OPUS, formats, musicUrl, sfxUrl, voiceUrl } from "./assets";
 
 let ctx: AudioContext | null = null;
 let master: GainNode | null = null;
@@ -131,6 +131,16 @@ function decode(url: string): Promise<AudioBuffer | null> {
       })
       .catch(() => {
         decoding.delete(url);
+        // a browser that claims Opus but cannot decode it (some Safari versions): MP3 from now on
+        if (/\.ogg(\?|$)/.test(url)) {
+          formats.opus = false;
+          try {
+            localStorage.setItem(NO_OPUS, "1");
+          } catch {
+            /* private mode: MP3 for this visit only */
+          }
+          return decode(url.replace(/\.ogg(\?|$)/, ".mp3$1"));
+        }
         return null; // a missing clip never blocks the game
       });
     decoding.set(url, p);
