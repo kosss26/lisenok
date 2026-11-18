@@ -10,7 +10,7 @@ Casting (assets/voice-cast.json, written by `npm run voice:list`): narrator = ma
 the fox = masha (good), forest residents = alena / lera / zahar with a pitch shift (src/content/forest.ts).
 Stress: every word of two or more syllables without «ё» gets its stress mark from assets/voice-stress.json
 (checked by hand, see assets/VOICE-STRESS.md); an unknown word stops the run. assets/voice-yandex.json
-replaces the text of single lines. Masters (48 kHz WAV) and the request log stay in tmp/voice-master/.
+replaces the text and/or speed of single lines (retakes chosen by tools/voice-retake.py). Masters (48 kHz WAV) and the request log stay in tmp/voice-master/.
 Clean-up: trim silence, 8 ms fade-in / 25 ms fade-out, -16 LUFS in the MP3 (-15.3 measured on the 48 kHz
 master), a 5 ms look-ahead limiter at -2 dBFS (at most 6 dB),
 60 ms of silence at the end; MP3 24 kHz 48 kbit/s, Opus 32 kbit/s."""
@@ -49,7 +49,8 @@ def mark_word(w: str, unknown: set) -> str:
 
 
 def marked(key: str, unknown: set) -> str:
-    text = OVERRIDE.get(key) or LINES[key].replace("+", "")
+    o = OVERRIDE.get(key)
+    text = (o.get("text") if isinstance(o, dict) else o) or LINES[key].replace("+", "")
     return re.sub(r"[+А-Яа-яЁё]+", lambda m: mark_word(m.group(0), unknown), text)
 
 
@@ -59,6 +60,9 @@ def cast(key: str) -> dict:
 
 
 def speed_for(key: str, voice: str) -> float:
+    o = OVERRIDE.get(key)
+    if isinstance(o, dict) and o.get("speed"):
+        return o["speed"]
     if SINGLE.match(key):
         return 0.9
     return 0.9 if voice == "zahar" else 0.95
