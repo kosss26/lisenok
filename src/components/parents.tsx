@@ -217,7 +217,6 @@ export function Parents() {
                 ["voice", "Голос"],
                 ["sounds", "Звуки"],
                 ["music", "Музыка"],
-                ["forest", "Звуки леса"],
               ] as const
             ).map(([key, label]) => (
               <label key={key} className="field range">

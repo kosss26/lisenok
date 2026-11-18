@@ -15,16 +15,6 @@
 Licensed under Creative Commons: By Attribution 4.0 License
 http://creativecommons.org/licenses/by/4.0/
 
-## Звуки леса
-
-`public/music/forest.mp3` — 40-секундная бесшовная петля, сведённая `tools/make-music.py`
-из самых ровных отрывков трёх записей (CC0, указываем авторов из благодарности):
-
-- ручей и ветер — "Park ambiences" (park_ambience_river.wav, park_ambience_wind.wav), Thimras,
-  OpenGameArt, CC0 — https://opengameart.org/content/park-ambiences
-- птицы — "Ambient Bird Sounds" (birds-isaiah658.ogg), isaiah658, OpenGameArt, CC0 —
-  https://opengameart.org/content/ambient-bird-sounds
-
 ## Звуковые эффекты
 
 Все эффекты (`public/sfx/*.mp3`: тап, выбор, «правильно», «попробуй ещё», звёздочка, фанфары, шаг)

@@ -29,7 +29,7 @@ export type Settings = {
   difficulty: Difficulty;
   /** minutes per day, 0 = no limit */
   limit: number;
-  volume: { voice: number; sounds: number; music: number; forest: number };
+  volume: { voice: number; sounds: number; music: number };
 };
 export type Progress = {
   intro: boolean;
@@ -71,7 +71,7 @@ const DEFAULT: Progress = {
     auto: true,
     difficulty: "medium",
     limit: 0,
-    volume: { voice: 1, sounds: 0.8, music: 0.5, forest: 0.6 },
+    volume: { voice: 1, sounds: 0.8, music: 0.5 },
   },
   playLog: {},
   extra: {},
@@ -96,7 +96,12 @@ function load(): Progress {
       settings: {
         ...DEFAULT.settings,
         ...saved.settings,
-        volume: { ...DEFAULT.settings.volume, ...saved.settings?.volume },
+        // only the known buses (older saves also had "forest", the removed forest ambience)
+        volume: {
+          voice: saved.settings?.volume?.voice ?? DEFAULT.settings.volume.voice,
+          sounds: saved.settings?.volume?.sounds ?? DEFAULT.settings.volume.sounds,
+          music: saved.settings?.volume?.music ?? DEFAULT.settings.volume.music,
+        },
       },
     };
   } catch {
