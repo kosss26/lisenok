@@ -1,0 +1,41 @@
+{
+  "name": "lisenok",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "description": "Лисёнок и звёзды — приключение с чтением и счётом для детей 5–9 лет",
+  "scripts": {
+    "dev": "vite --host 0.0.0.0 --port 8080",
+    "build": "node tools/asset-versions.mjs && tsc --noEmit && vite build",
+    "preview": "vite preview --host 0.0.0.0 --port 8081",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint .",
+    "format": "prettier --write .",
+    "test": "node --test src/**/*.test.ts",
+    "voice:list": "node tools/voice-lines.ts",
+    "test:e2e": "node --test --test-concurrency=1 --test-timeout=300000 tests/e2e/*.test.mjs"
+  },
+  "dependencies": {
+    "@fontsource-variable/nunito": "^5.2.0",
+    "@tanstack/react-router": "^1.170.0",
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.20.0",
+    "@types/node": "^22.16.5",
+    "@types/react": "^19.2.0",
+    "@types/react-dom": "^19.2.0",
+    "@vitejs/plugin-react": "^5.2.0",
+    "eslint": "^9.20.0",
+    "eslint-config-prettier": "^10.1.1",
+    "eslint-plugin-react-hooks": "^5.2.0",
+    "eslint-plugin-react-refresh": "^0.4.20",
+    "globals": "^15.15.0",
+    "playwright": "^1.62.0",
+    "prettier": "^3.4.0",
+    "typescript": "^5.7.0",
+    "typescript-eslint": "^8.56.1",
+    "vite": "^8.2.0"
+  }
+}

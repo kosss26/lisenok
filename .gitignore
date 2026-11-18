@@ -1,0 +1,7 @@
+*.log
+.DS_Store
+/assets/music-src
+/test-results
+/tmp
+dist
+node_modules
