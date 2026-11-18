@@ -1,5 +1,5 @@
 import { createHash } from "node:crypto";
-import { readdirSync, readFileSync, statSync, writeFileSync } from "node:fs";
+import { cpSync, existsSync, readdirSync, readFileSync, statSync, writeFileSync } from "node:fs";
 import { join, relative } from "node:path";
 import { defineConfig, type Plugin } from "vite";
 import react from "@vitejs/plugin-react";
@@ -28,6 +28,8 @@ function offlinePlugin(): Plugin {
       outDir = c.build.outDir;
     },
     closeBundle() {
+      // AVIF / Opus copies made by tools/encode-media.py
+      if (existsSync("tmp/media-cache")) cpSync("tmp/media-cache", outDir, { recursive: true });
       const versions = readFileSync("src/game/asset-versions.ts", "utf8");
       const v = Object.fromEntries(
         [...versions.matchAll(/"(\w+)": "(\w+)"/g)].map((m) => [m[1], m[2]]),

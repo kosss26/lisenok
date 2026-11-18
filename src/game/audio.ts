@@ -3,7 +3,7 @@
  * (voice / sounds / music — set in the parents' corner). Voice lines play as sequences
  * ("Найди букву" + "эм"); a new sequence cuts the previous one. Music ducks under the voice.
  */
-import { asset, sfxUrl, voiceUrl } from "./assets";
+import { musicUrl, sfxUrl, voiceUrl } from "./assets";
 
 let ctx: AudioContext | null = null;
 let master: GainNode | null = null;
@@ -243,7 +243,7 @@ export function startMusic() {
   if (typeof window === "undefined" || volumes.music === 0 || paused) return;
   const audio = context();
   if (!music) {
-    music = new Audio(asset("/music/easy-lemon.mp3"));
+    music = new Audio(musicUrl());
     music.loop = true;
     music.preload = "auto";
     music.crossOrigin = "anonymous";

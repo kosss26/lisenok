@@ -1,7 +1,16 @@
 /* Service worker for offline play (generated into dist/sw.js by vite.config.ts). */
 const VERSION = "__VERSION__";
-const URLS = /*__URLS__*/ [];
-const CACHE = `lisenok-${VERSION}`;
+const ALL = /*__URLS__*/ [];
+// the page tells us (sw.js?img=avif|webp&aud=ogg|mp3) which picture and sound formats it uses
+const q = new URL(self.location.href).searchParams;
+const skip = [
+  q.get("img") === "avif" ? ".webp" : ".avif",
+  q.get("aud") === "ogg" ? ".mp3" : ".ogg",
+];
+const URLS = ALL.filter(
+  (u) => !skip.some((ext) => /^\/(art|voice|sfx|music)\//.test(u) && u.split("?")[0].endsWith(ext)),
+);
+const CACHE = `lisenok-${VERSION}-${q.get("img")}-${q.get("aud")}`;
 
 self.addEventListener("install", (event) => {
   event.waitUntil(
