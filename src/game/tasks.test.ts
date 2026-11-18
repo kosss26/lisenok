@@ -3,7 +3,8 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { existsSync } from "node:fs";
-import { FOREST } from "../content/forest.ts";
+import { ALL_STOPS } from "../content/worlds.ts";
+import { TICKLE, tickleKey } from "../content/voice.ts";
 import { introKey, outroKey, shown, voiceLines } from "../content/voice.ts";
 import { makeRound, type Level } from "./tasks.ts";
 import { SENTENCES, STORIES, WORDS, WORDS_BY_LEVEL, similar } from "../content/words.ts";
@@ -17,7 +18,7 @@ test("all skills × levels give valid rounds", () => {
     let s = seed * 9301 + 49297;
     const rand = () => (s = (s * 9301 + 49297) % 233280) / 233280;
     const g = [0, 0.3, 0.6, 1][seed % 4];
-    for (const stop of FOREST) {
+    for (const stop of ALL_STOPS) {
       for (const level of [1, 2, 3] as Level[]) {
         const round = makeRound(stop.skill, { level, g }, rand);
         assert.equal(round.length, 5);
@@ -51,8 +52,13 @@ test("all skills × levels give valid rounds", () => {
 });
 
 test("every stop has art and voice", () => {
-  for (const stop of FOREST) {
+  assert.equal(new Set(ALL_STOPS.map((s) => s.id)).size, ALL_STOPS.length, "unique stop ids");
+  assert.equal(new Set(ALL_STOPS.map((s) => s.gift)).size, ALL_STOPS.length, "unique gifts");
+  for (const stop of ALL_STOPS) {
     assert.ok(hasPic(stop.resident) && hasPic(stop.gift), stop.id);
+    for (const pose of ["-sad", "-happy"])
+      assert.ok(hasPic(stop.resident + pose), stop.resident + pose);
+    assert.ok(TICKLE[stop.resident] && lines[tickleKey(stop.resident)], `tickle ${stop.resident}`);
     assert.ok(stop.intro.length && stop.outro.length);
     stop.intro.forEach((l, i) => assert.equal(shown(lines[introKey(stop.id, i)]), l.text));
     stop.outro.forEach((l, i) => assert.equal(shown(lines[outroKey(stop.id, i)]), l.text));

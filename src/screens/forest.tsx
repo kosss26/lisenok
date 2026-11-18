@@ -1,6 +1,7 @@
 import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties } from "react";
 import { useNavigate } from "@tanstack/react-router";
-import { FOREST, onPath, timeOf, weatherOf, type TimeOfDay } from "../content/forest";
+import { onPath, type Stop, type TimeOfDay } from "../content/forest";
+import { WORLD, type World, type WorldId } from "../content/worlds";
 import { Mist, Rain } from "../components/weather";
 import { BackButton, Fox, ParentsButton, Pic, StarCount } from "../components/kit";
 import { art } from "../game/assets";
@@ -10,8 +11,8 @@ import { DifficultyBadge } from "../components/difficulty";
 import { nextStopIndex, starsIn, stopOpen, update, useProgress } from "../game/progress";
 
 type Pt = { x: number; y: number };
-/** Where the fox stood when the forest was last shown (this launch) — it walks on from there. */
-let lastFox: Pt | null = null;
+/** Where the fox stood when each path was last shown (this launch) — it walks on from there. */
+const lastFox: Partial<Record<WorldId, Pt>> = {};
 /** the forest is two pictures high (entrance below, deep forest above); points are % of all of it */
 const ENTRANCE: Pt = { x: 50, y: 99.5 };
 const reduced = () =>
@@ -23,10 +24,10 @@ const TALL = 32 / 9;
 const dist = (a: Pt, b: Pt) => Math.hypot(a.x - b.x, (a.y - b.y) * TALL);
 /** The fox waits right beside the next stop (never on top of another one): of a few spots
  * around it, it takes the one farthest from every other resident and inside the screen. */
-function foxSpot(next: number): Pt {
-  const i = Math.min(next, FOREST.length - 1);
-  const to = onPath(FOREST[i]);
-  const others = FOREST.flatMap((s, j) => (j === i ? [] : [onPath(s)]));
+function foxSpot(next: number, stops: Stop[]): Pt {
+  const i = Math.min(next, stops.length - 1);
+  const to = onPath(stops[i]);
+  const others = stops.flatMap((s, j) => (j === i ? [] : [onPath(s)]));
   const spots: Pt[] = [-14, 14, -11, 11].flatMap((dx) =>
     [1.6, 0.4].map((dy) => ({ x: to.x + dx, y: to.y + dy })),
   );
@@ -39,23 +40,29 @@ const depth = (y: number) => Math.min(1, 0.68 + 0.32 * (y / 80));
 /** A full-box layer moved by translate(%) — % of its own size = % of the picture (GPU-only). */
 const at = (p: Pt): CSSProperties => ({ transform: `translate(${p.x}%, ${p.y}%)` });
 
-export function Forest() {
+export const Forest = () => <WorldPath world={WORLD.forest} />;
+export const Sea = () => <WorldPath world={WORLD.sea} />;
+
+/** A world's path (forest, sea): residents on clearings, the fox walking to the next one. */
+function WorldPath({ world }: { world: World }) {
   const p = useProgress();
   const navigate = useNavigate();
-  const next = nextStopIndex(p);
-  const allDone = next >= FOREST.length;
-  const celebrate = allDone && !p.forestCelebrated;
+  const stops = world.stops;
+  const next = nextStopIndex(p, stops);
+  const allDone = next >= stops.length;
+  const celebrated = world.id === "forest" ? p.forestCelebrated : p.seaCelebrated;
+  const celebrate = allDone && !celebrated;
   const [shake, setShake] = useState<string | null>(null);
 
-  const target = foxSpot(next);
-  const start = reduced() ? target : (lastFox ?? ENTRANCE);
+  const target = foxSpot(next, stops);
+  const start = reduced() ? target : (lastFox[world.id] ?? ENTRANCE);
   const walks = start.x !== target.x || start.y !== target.y;
   const [fox, setFox] = useState<Pt>(start);
   const [arrived, setArrived] = useState(!walks);
   const [celebrateCard, setCelebrateCard] = useState(reduced());
 
   useEffect(() => {
-    lastFox = target;
+    lastFox[world.id] = target;
     const timers: number[] = [];
     if (walks) {
       timers.push(window.setTimeout(() => setFox(target), 250));
@@ -66,8 +73,8 @@ export function Forest() {
         () => {
           if (celebrate) {
             void sfx("fanfare");
-            void say(["forest-done"]);
-          } else if (!allDone) void say(["forest-next"]);
+            void say([world.say.done]);
+          } else if (!allDone) void say([world.say.next]);
         },
         walks && !celebrate ? 1500 : 450,
       ),
@@ -78,7 +85,7 @@ export function Forest() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const flipped = target.x > FOREST[Math.min(next, FOREST.length - 1)].x;
+  const flipped = target.x > stops[Math.min(next, stops.length - 1)].x;
   const goingLeft = target.x < start.x;
 
   // the path is taller than the screen: open it where the fox is, scroll up to the sky to celebrate
@@ -112,26 +119,21 @@ export function Forest() {
   }, [celebrate]);
 
   return (
-    <div className={`scene forest-screen ${celebrate ? "is-night" : ""}`}>
+    <div className={`scene forest-screen world-${world.id} ${celebrate ? "is-night" : ""}`}>
       <div className="forest-scroll" ref={scroller}>
         <div className="forest-tall">
-          <img
-            className="forest-bg forest-bg-2"
-            src={art("bg-forest-2")}
-            alt=""
-            draggable={false}
-          />
-          <img className="forest-bg forest-bg-1" src={art("bg-forest")} alt="" draggable={false} />
+          <img className="forest-bg forest-bg-2" src={art(world.bg[1])} alt="" draggable={false} />
+          <img className="forest-bg forest-bg-1" src={art(world.bg[0])} alt="" draggable={false} />
           <div className="forest-seam" aria-hidden />
           <div className="forest-half forest-half-1">
-            <ForestAmbient />
+            {world.id === "forest" ? <ForestAmbient /> : <SeaAmbient />}
           </div>
           <div className="forest-half forest-half-2">
-            <ForestAmbient stream={false} />
+            {world.id === "forest" ? <ForestAmbient stream={false} /> : <SeaAmbient />}
           </div>
-          <ForestLight />
-          {FOREST.map((stop, i) => {
-            const open = stopOpen(p, i);
+          <ForestLight world={world} />
+          {stops.map((stop, i) => {
+            const open = stopOpen(p, i, stops);
             const done = Boolean(p.done[stop.id]);
             const isNext = i === next;
             return (
@@ -166,7 +168,11 @@ export function Forest() {
                   }
                   void sfx("step");
                   zoomFrom(e.currentTarget);
-                  void navigate({ to: "/forest/$stopId", params: { stopId: stop.id } });
+                  void navigate(
+                    world.id === "sea"
+                      ? { to: "/sea/$stopId", params: { stopId: stop.id } }
+                      : { to: "/forest/$stopId", params: { stopId: stop.id } },
+                  );
                 }}
               >
                 <span className="stop-glow" aria-hidden />
@@ -194,7 +200,7 @@ export function Forest() {
           )}
           {celebrate && <div className="night" aria-hidden />}
           {celebrate &&
-            FOREST.map((stop, i) => (
+            stops.map((stop, i) => (
               <div
                 key={stop.id}
                 className="sky-star-track"
@@ -214,11 +220,11 @@ export function Forest() {
       <div className="scene-layer">
         <div className="top-bar">
           <BackButton to="/map" label="На карту" />
-          <StarCount n={starsIn(p)} total={FOREST.length} />
+          <StarCount n={starsIn(p, stops)} total={stops.length} />
           <DifficultyBadge pick />
           <ParentsButton />
         </div>
-        {allDone && !celebrate && (
+        {allDone && !celebrate && world.id === "forest" && (
           <button
             type="button"
             className="glade-btn"
@@ -236,15 +242,19 @@ export function Forest() {
             {celebrateCard && (
               <div className="celebrate-card">
                 <Fox pose="cheer" className="celebrate-fox" />
-                <h2>Звёзды вернулись на небо!</h2>
-                <p>Весь лес сияет. Скоро лисёнок отправится к морю.</p>
+                <h2>{world.done.title}</h2>
+                <p>{world.done.text}</p>
                 <button
                   type="button"
                   className="big-btn"
                   onClick={() => {
                     void sfx("tap");
-                    update((s) => ({ ...s, forestCelebrated: true }));
-                    void say(["glade-open"]);
+                    update((s) =>
+                      world.id === "forest"
+                        ? { ...s, forestCelebrated: true }
+                        : { ...s, seaCelebrated: true },
+                    );
+                    if (world.id === "forest") void say(["glade-open"]);
                   }}
                 >
                   Ура!
@@ -318,6 +328,31 @@ function ForestAmbient({ stream = true }: { stream?: boolean }) {
   );
 }
 
+/** The sea glitters along the shore on the right (CSS transforms/opacity only). */
+const WAVES = [
+  [80, 12],
+  [88, 22],
+  [76, 34],
+  [92, 41],
+  [84, 52],
+  [90, 63],
+  [80, 74],
+  [94, 86],
+];
+function SeaAmbient() {
+  return (
+    <div className="ambient" aria-hidden>
+      {WAVES.map(([x, y], i) => (
+        <span
+          key={i}
+          className="sparkle"
+          style={{ left: `${x}%`, top: `${y}%`, animationDelay: `${(i * 0.61) % 2.4}s` }}
+        />
+      ))}
+    </div>
+  );
+}
+
 // Time of day along the path (morning at the entrance → dusk deep in the forest) and the weather
 // over a few stops: a tint layer with a colour at every clearing, a shower and mist bands.
 const TINT: Record<TimeOfDay, string> = {
@@ -326,14 +361,14 @@ const TINT: Record<TimeOfDay, string> = {
   evening: "rgba(255, 128, 48, 0.2)",
   dusk: "rgba(46, 38, 120, 0.4)",
 };
-function band(w: "rain" | "fog") {
-  const ys = FOREST.flatMap((s, i) => (weatherOf(i) === w ? [onPath(s).y] : []));
+function band(world: World, w: "rain" | "fog") {
+  const ys = world.stops.flatMap((s, i) => (world.weather(i) === w ? [onPath(s).y] : []));
   return { top: `${Math.min(...ys) - 6}%`, height: `${Math.max(...ys) - Math.min(...ys) + 12}%` };
 }
-function ForestLight() {
-  const stops = FOREST.map((s, i) => ({ y: onPath(s).y, c: TINT[timeOf(i)] })).sort(
-    (a, b) => a.y - b.y,
-  );
+function ForestLight({ world }: { world: World }) {
+  const stops = world.stops
+    .map((s, i) => ({ y: onPath(s).y, c: TINT[world.time(i)] }))
+    .sort((a, b) => a.y - b.y);
   const gradient = `linear-gradient(${[
     `${stops[0].c} 0%`,
     ...stops.map((s) => `${s.c} ${s.y.toFixed(1)}%`),
@@ -342,8 +377,8 @@ function ForestLight() {
   return (
     <>
       <div className="forest-light" style={{ background: gradient }} aria-hidden />
-      <Rain className="forest-rain" style={band("rain")} dense />
-      <Mist className="forest-mist" style={band("fog")} />
+      <Rain className="forest-rain" style={band(world, "rain")} dense />
+      <Mist className="forest-mist" style={band(world, "fog")} />
     </>
   );
 }

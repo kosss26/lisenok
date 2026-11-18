@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { FOREST } from "../content/forest";
+import { WORLD_LIST } from "../content/worlds";
 import { FINDS } from "../content/glade";
 import { BackButton, Pic } from "../components/kit";
 import { IconLock } from "../components/icons";
@@ -7,7 +7,7 @@ import { Sky } from "../components/sky";
 import { giftKey } from "../content/voice";
 import { say, sfx } from "../game/audio";
 import { vibrate } from "../game/haptics";
-import { openGift, useProgress } from "../game/progress";
+import { openGift, useProgress, worldOpen } from "../game/progress";
 
 export function Album() {
   const p = useProgress();
@@ -25,22 +25,26 @@ export function Album() {
         <h1 className="album-title">Мои сокровища</h1>
         <span className="top-spacer" />
       </div>
-      <p className="album-sub">
-        Лес · {p.gifts.length} из {FOREST.length}
-      </p>
-      <div className="album-grid">
-        {FOREST.map((s) => (
-          <AlbumGift
-            key={s.id}
-            stopId={s.id}
-            gift={s.gift}
-            name={s.giftName}
-            resident={s.resident}
-            have={p.gifts.includes(s.gift)}
-            wrapped={!p.opened.includes(s.gift)}
-          />
-        ))}
-      </div>
+      {WORLD_LIST.filter((w) => w.id === "forest" || worldOpen(p, w.id)).map((w) => (
+        <section key={w.id} className={`album-world album-${w.id}`}>
+          <p className="album-sub">
+            {w.album} · {w.stops.filter((s) => p.gifts.includes(s.gift)).length} из {w.stops.length}
+          </p>
+          <div className="album-grid">
+            {w.stops.map((s) => (
+              <AlbumGift
+                key={s.id}
+                stopId={s.id}
+                gift={s.gift}
+                name={s.giftName}
+                resident={s.resident}
+                have={p.gifts.includes(s.gift)}
+                wrapped={!p.opened.includes(s.gift)}
+              />
+            ))}
+          </div>
+        </section>
+      ))}
       {Object.keys(p.sky).length > 0 && (
         <>
           <p className="album-sub">Моё небо · {Object.keys(p.sky).length} звёзд</p>

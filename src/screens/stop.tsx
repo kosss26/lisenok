@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
-import { useNavigate } from "@tanstack/react-router";
-import { FOREST, timeOf, weatherOf, type Stop } from "../content/forest";
+import { useNavigate, useParams } from "@tanstack/react-router";
+import { type Stop } from "../content/forest";
+import { ALL_STOPS, findStop, type World } from "../content/worlds";
 import { StopWeather } from "../components/weather";
 import { introKey, outroKey, youngId } from "../content/voice";
 import { useDialogue } from "../game/dialogue";
@@ -20,31 +21,38 @@ import {
   recordTask,
   stopOpen,
   tuneFor,
+  worldOpen,
   weakWordIds,
 } from "../game/progress";
 import { makeRound, type Task } from "../game/tasks";
-import { stopRoute } from "../router";
 
 type Phase = "hello" | "task" | "reward";
 
 export function StopScreen() {
-  const { stopId } = stopRoute.useParams();
+  // the same screen serves /forest/$stopId and /sea/$stopId
+  const { stopId = "" } = useParams({ strict: false }) as { stopId?: string };
   const navigate = useNavigate();
-  const index = FOREST.findIndex((s) => s.id === stopId);
-  const stop = FOREST[index];
-  const allowed = stop && stopOpen(getProgress(), index);
+  const found = findStop(stopId);
+  const p = getProgress();
+  const allowed =
+    found && worldOpen(p, found.world.id) && stopOpen(p, found.index, found.world.stops);
 
   useEffect(() => {
-    if (!allowed) void navigate({ to: "/forest", replace: true });
-  }, [allowed, navigate]);
+    if (!allowed)
+      void navigate({
+        to: found && worldOpen(p, found.world.id) ? `/${found.world.id}` : "/map",
+        replace: true,
+      });
+  }, [allowed, navigate, found, p]);
   useEffect(() => () => stopVoice(), []);
 
   if (!allowed) return null;
-  return <StopGame key={stop.id} stopIndex={index} />;
+  return <StopGame key={found.stop.id} world={found.world} stopIndex={found.index} />;
 }
 
-function StopGame({ stopIndex }: { stopIndex: number }) {
-  const stop = FOREST[stopIndex];
+function StopGame({ world, stopIndex }: { world: World; stopIndex: number }) {
+  const stop = world.stops[stopIndex];
+  const back = `/${world.id}`;
   const navigate = useNavigate();
   const [phase, setPhase] = useState<Phase>("hello");
   useEffect(() => {
@@ -53,8 +61,8 @@ function StopGame({ stopIndex }: { stopIndex: number }) {
   useEffect(() => () => setScene("map"), []);
   const [round, setRound] = useState<Task[]>(() =>
     makeRound(
-      stop.skill,
-      tuneFor(getProgress(), stopIndex),
+      skillFor(stop),
+      tuneFor(getProgress(), stopIndex, world),
       Math.random,
       weakWordIds(getProgress()),
     ),
@@ -73,8 +81,8 @@ function StopGame({ stopIndex }: { stopIndex: number }) {
       if (m >= 1 && getProgress().settings.auto) {
         easeNow(Math.min(0.15, 0.05 * m));
         const easier = makeRound(
-          stop.skill,
-          tuneFor(getProgress(), stopIndex),
+          skillFor(stop),
+          tuneFor(getProgress(), stopIndex, world),
           Math.random,
           weakWordIds(getProgress()),
         );
@@ -96,12 +104,12 @@ function StopGame({ stopIndex }: { stopIndex: number }) {
 
   return (
     <Scene
-      bg="bg-clearing"
+      bg={world.stopBg}
       className={`stop-screen phase-${phase}`}
-      boxed={<StopWeather time={timeOf(stopIndex)} weather={weatherOf(stopIndex)} />}
+      boxed={<StopWeather time={world.time(stopIndex)} weather={world.weather(stopIndex)} />}
     >
       <div className="top-bar">
-        <BackButton to="/forest" label="К тропинке" />
+        <BackButton to={back} label="К тропинке" />
         <div className="dots" aria-label={`Задание ${step + 1} из ${round.length}`}>
           {round.map((_, i) => (
             <span
@@ -175,8 +183,11 @@ function StopGame({ stopIndex }: { stopIndex: number }) {
               stopVoice();
               // a star the child did not hang up yet gets a free spot in the sky
               if (!getProgress().sky[stop.id])
-                placeStar(stop.id, ...freeSkySpot(getProgress(), stopIndex + 1));
-              void navigate({ to: "/forest" });
+                placeStar(
+                  stop.id,
+                  ...freeSkySpot(getProgress(), ALL_STOPS.findIndex((s) => s.id === stop.id) + 1),
+                );
+              void navigate({ to: back });
             }}
           >
             Дальше
@@ -186,6 +197,10 @@ function StopGame({ stopIndex }: { stopIndex: number }) {
     </Scene>
   );
 }
+
+/** 5–6-year-olds play the stop's own no-arithmetic skill (the one its young dialogue talks about) */
+const skillFor = (stop: Stop) =>
+  getProgress().settings.level === 1 && stop.young ? stop.young.skill : stop.skill;
 
 const residentPic = (stop: Stop, pose: string) => stop.resident + (pose ? `-${pose}` : "");
 

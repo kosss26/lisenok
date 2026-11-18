@@ -2,7 +2,7 @@ import { createRootRoute, createRoute, createRouter } from "@tanstack/react-rout
 import { Shell } from "./screens/shell";
 import { Title } from "./screens/title";
 import { WorldMap } from "./screens/world-map";
-import { Forest } from "./screens/forest";
+import { Forest, Sea } from "./screens/forest";
 import { StopScreen } from "./screens/stop";
 import { Album } from "./screens/album";
 import { Glade } from "./screens/glade";
@@ -17,11 +17,17 @@ export const stopRoute = createRoute({
   path: "/forest/$stopId",
   component: StopScreen,
 });
+const sea = createRoute({ getParentRoute: () => root, path: "/sea", component: Sea });
+export const seaStopRoute = createRoute({
+  getParentRoute: () => root,
+  path: "/sea/$stopId",
+  component: StopScreen,
+});
 const glade = createRoute({ getParentRoute: () => root, path: "/glade", component: Glade });
 const album = createRoute({ getParentRoute: () => root, path: "/album", component: Album });
 
 export const router = createRouter({
-  routeTree: root.addChildren([title, map, forest, stopRoute, glade, album]),
+  routeTree: root.addChildren([title, map, forest, stopRoute, sea, seaStopRoute, glade, album]),
   defaultPreload: false,
   defaultViewTransition: viewTransitions(),
 });

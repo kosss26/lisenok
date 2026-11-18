@@ -4,7 +4,9 @@
  *   npm run voice:list && python3 tools/make-voice.py missing
  * ("+" before a vowel marks stress for the synthesizer.)
  */
-import { FOREST, type Line, type Voice } from "./forest.ts";
+import { type Line, type Voice } from "./forest.ts";
+import { SEA_TICKLE } from "./sea.ts";
+import { ALL_STOPS } from "./worlds.ts";
 import { stressed } from "./stress.ts";
 import { NAMES } from "./names.ts";
 import { LETTER_NAMES, SENTENCES, STORIES, SYLLABLES, WORDS } from "./words.ts";
@@ -57,8 +59,9 @@ export const outroKey = (stop: string, i: number) => `bye-${stop}-${i}`;
 /** the dialogue a stop uses for 5–6-year-olds (when it has one) */
 export const youngId = (stop: string) => `${stop}-young`;
 
-/** what a forest resident says when the child tickles it (in its own voice) */
+/** what a resident says when the child tickles it (in its own voice), by picture name */
 export const TICKLE: Record<string, string> = {
+  ...SEA_TICKLE,
   hedgehog: "Хи-хи! Щекотно! Я сейчас свернусь клубочком!",
   squirrel: "Ой, щекотно! Хи-хи!",
   hare: "Хи-хи! Сейчас как прыгну!",
@@ -76,8 +79,8 @@ export function voiceCast(): Record<string, Voice | "fox"> {
   const out: Record<string, Voice | "fox"> = { hi: "fox", [tickleKey("fox")]: "fox" };
   for (const { id } of NAMES) out[`name-${id}-hi`] = "fox";
   const add = (key: string, l: Line, v: Voice) => (out[key] = l.who === "res" ? v : "fox");
-  for (const stop of FOREST) {
-    out[tickleKey(stop.id.replace(/-2$/, ""))] = stop.voice;
+  for (const stop of ALL_STOPS) {
+    out[tickleKey(stop.resident)] = stop.voice;
     stop.intro.forEach((l, i) => add(introKey(stop.id, i), l, stop.voice));
     stop.outro.forEach((l, i) => add(outroKey(stop.id, i), l, stop.voice));
     stop.young?.intro.forEach((l, i) => add(introKey(youngId(stop.id), i), l, stop.voice));
@@ -131,6 +134,9 @@ const FIXED: Record<string, string> = {
   locked: "Этот мир пока спит. Сначала собери все звёзды в лесу!",
   "locked-soon": "Этот мир скоро откроется. Лисёнок уже собирает рюкзак!",
   "forest-next": "Кому поможем? Нажми на жителя леса.",
+  "map-pick-sea": "Куда отправимся? Нажми на море!",
+  "sea-next": "Кому поможем? Нажми на жителя моря.",
+  "sea-done": "Ура! Все звёзды моря собраны! Они снова сияют на небе. Скоро мы отправимся в горы!",
   "stop-locked": "Сначала помоги тем, кто ближе к началу тропинки.",
   "forest-done":
     "Ура! Все звёзды леса собраны! Они снова сияют на небе. Скоро мы отправимся к морю!",
@@ -232,13 +238,13 @@ export function voiceLines(): Record<string, string> {
   for (const s of syl) lines[sylKey(s)] = solo(s.toLowerCase());
   for (const s of SENTENCES) lines[`sen-${s.id}`] = s.text;
   for (const s of STORIES) lines[`st-${s.id}`] = s.text;
-  for (const stop of FOREST) {
+  for (const stop of ALL_STOPS) {
     stop.intro.forEach((l, i) => (lines[introKey(stop.id, i)] = l.text));
     stop.outro.forEach((l, i) => (lines[outroKey(stop.id, i)] = l.text));
     stop.young?.intro.forEach((l, i) => (lines[introKey(youngId(stop.id), i)] = l.text));
   }
   for (const [who, text] of Object.entries(TICKLE)) lines[tickleKey(who)] = text;
-  for (const stop of FOREST) lines[giftKey(stop.id)] = `${stop.giftName}!`;
+  for (const stop of ALL_STOPS) lines[giftKey(stop.id)] = `${stop.giftName}!`;
   for (const { id, name } of NAMES) {
     lines[`name-${id}-hi`] = `Привет, ${name}! Отправимся в путь?`;
     lines[`name-${id}-bravo`] = `Молодец, ${name}!`;

@@ -4,7 +4,8 @@
  * parents' corner, settings and today's play time.
  */
 import { useSyncExternalStore } from "react";
-import { FOREST, type Skill } from "../content/forest.ts";
+import { FOREST, type Skill, type Stop } from "../content/forest.ts";
+import { ALL_STOPS, WORLD, type World } from "../content/worlds.ts";
 import type { Level, Tune } from "./tasks.ts";
 
 /** «легко / средне / трудно» on top of the age level (parents' corner or the child's own picker) */
@@ -49,6 +50,7 @@ export type Progress = {
   /** minutes a grown-up added today on the rest screen */
   extra: Record<string, number>;
   forestCelebrated: boolean;
+  seaCelebrated: boolean;
   /** лесная полянка: find id -> how many times found */
   finds: Record<string, number>;
   /** gifts already unwrapped in the album (new ones wait in a little box) */
@@ -76,6 +78,7 @@ const DEFAULT: Progress = {
   playLog: {},
   extra: {},
   forestCelebrated: false,
+  seaCelebrated: false,
   finds: {},
   opened: [],
   sky: {},
@@ -141,14 +144,16 @@ export function resetProgress() {
   update((p) => ({ ...DEFAULT, settings: p.settings, intro: true }));
 }
 
-// ---------- the forest path ----------
-export const starsIn = (p: Progress) => FOREST.filter((s) => p.done[s.id]).length;
+// ---------- the paths (forest, sea) ----------
+export const starsIn = (p: Progress, stops: Stop[] = FOREST) =>
+  stops.filter((s) => p.done[s.id]).length;
 /** Stops open one after another: the first unsolved one is the next. */
-export const nextStopIndex = (p: Progress) => {
-  const i = FOREST.findIndex((s) => !p.done[s.id]);
-  return i === -1 ? FOREST.length : i;
+export const nextStopIndex = (p: Progress, stops: Stop[] = FOREST) => {
+  const i = stops.findIndex((s) => !p.done[s.id]);
+  return i === -1 ? stops.length : i;
 };
-export const stopOpen = (p: Progress, index: number) => index <= nextStopIndex(p);
+export const stopOpen = (p: Progress, index: number, stops: Stop[] = FOREST) =>
+  index <= nextStopIndex(p, stops);
 
 // ---------- answers ----------
 export function recordTask(skill: Skill, mistakes: number, hinted: boolean, word?: string) {
@@ -175,8 +180,6 @@ export function recordTask(skill: Skill, mistakes: number, hinted: boolean, word
 
 // ---------- difficulty ----------
 const SHIFT: Record<Difficulty, number> = { easy: -0.25, medium: 0, hard: 0.25 };
-/** how much of the age level the path covers: the last stop at «средне» reaches 0.7 */
-const PATH_SPAN = 0.7;
 export const ADAPT_MIN = -0.45;
 export const ADAPT_MAX = 0.15;
 
@@ -185,18 +188,24 @@ export const ADAPT_MAX = 0.15;
  * it rises slowly and evenly from the first stop to the last, the «легко / средне / трудно»
  * choice moves it down or up, and the automatic shift follows how the child is doing.
  */
-export function grade(p: Progress, stopIndex: number, stops = FOREST.length): number {
+export function grade(
+  p: Progress,
+  stopIndex: number,
+  stops = FOREST.length,
+  span: readonly [number, number] = WORLD.forest.span,
+): number {
   const path = stops > 1 ? Math.min(1, stopIndex / (stops - 1)) : 0;
   const auto = p.settings.auto ? p.adapt : 0;
-  const g = PATH_SPAN * path + SHIFT[p.settings.difficulty] + auto;
+  // each world covers its own part of the age level (forest 0 → 0.7, sea 0.5 → 1 at «средне»)
+  const g = span[0] + (span[1] - span[0]) * path + SHIFT[p.settings.difficulty] + auto;
   return Math.round(Math.max(0, Math.min(1, g)) * 100) / 100;
 }
 /** the glade (practice after the forest): the middle of the age level */
 export const gladeGrade = (p: Progress) =>
   Math.max(0, Math.min(1, 0.5 + SHIFT[p.settings.difficulty] + (p.settings.auto ? p.adapt : 0)));
-export const tuneFor = (p: Progress, stopIndex: number): Tune => ({
+export const tuneFor = (p: Progress, stopIndex: number, world: World = WORLD.forest): Tune => ({
   level: p.settings.level,
-  g: grade(p, stopIndex),
+  g: grade(p, stopIndex, world.stops.length, world.span),
 });
 
 /**
@@ -214,7 +223,7 @@ export function easeNow(by = 0.1) {
 
 /** A stop is solved: star + gift, and the automatic difficulty shift. */
 export function finishStop(stopId: string, mistakes: number): { first: boolean } {
-  const stop = FOREST.find((s) => s.id === stopId);
+  const stop = ALL_STOPS.find((s) => s.id === stopId);
   const first = !state.done[stopId];
   update((p) => ({
     ...p,
@@ -279,6 +288,9 @@ export function freeSkySpot(p: Progress, seed: number): [number, number] {
   return best;
 }
 export const forestDone = (p: Progress) => nextStopIndex(p) >= FOREST.length;
+export const seaDone = (p: Progress) => nextStopIndex(p, WORLD.sea.stops) >= WORLD.sea.stops.length;
+/** a world opens when the one before it is finished */
+export const worldOpen = (p: Progress, id: World["id"]) => id === "forest" || forestDone(p);
 
 // ---------- play time ----------
 export function addPlayTime(seconds: number) {

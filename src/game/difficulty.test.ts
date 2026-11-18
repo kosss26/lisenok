@@ -3,6 +3,8 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { FOREST } from "../content/forest.ts";
+import { SEA } from "../content/sea.ts";
+import { ALL_STOPS, WORLD } from "../content/worlds.ts";
 import { countRange, makeRound, mathMax, playableSkill, type Level } from "./tasks.ts";
 import { grade, nextAdapt, ADAPT_MIN, type Progress, type Difficulty } from "./progress.ts";
 
@@ -40,8 +42,39 @@ test("slow up, quick down", () => {
   assert.ok(nextAdapt(ADAPT_MIN, 9) >= ADAPT_MIN);
 });
 
+test("the sea: 18 stops of 5 tasks, and it continues the forest's curve up to the top", () => {
+  assert.equal(SEA.length, 18);
+  for (const s of SEA) assert.equal(makeRound(s.skill, { level: 2, g: 0.8 }, rand).length, 5);
+  const { span } = WORLD.sea;
+  const g = SEA.map((_, i) => grade(prog("medium"), i, SEA.length, span));
+  const forestEnd = grade(prog("medium"), FOREST.length - 1);
+  assert.ok(
+    g[0] < forestEnd && forestEnd - g[0] <= 0.25,
+    `a small step back: ${forestEnd} → ${g[0]}`,
+  );
+  for (let i = 1; i < g.length; i++) {
+    assert.ok(g[i] >= g[i - 1]);
+    assert.ok(g[i] - g[i - 1] <= 0.035, `sea step ${i}: ${g[i - 1]} → ${g[i]}`);
+  }
+  assert.equal(g[g.length - 1], 1, "the last sea stop reaches the top of the age level");
+  // arithmetic comes gradually: never in the first third of the sea
+  const firstMath = SEA.findIndex((s) => s.skill === "add" || s.skill === "sub");
+  assert.ok(firstMath >= SEA.length / 3, `first + or − at sea stop ${firstMath + 1}`);
+});
+
+test("every + or − stop has its own no-arithmetic version for 5–6-year-olds", () => {
+  for (const stop of ALL_STOPS) {
+    if (stop.skill !== "add" && stop.skill !== "sub") continue;
+    assert.ok(stop.young, `${stop.id} has a young version`);
+    assert.ok(!["add", "sub"].includes(stop.young.skill), `${stop.id}: ${stop.young.skill}`);
+    for (const g of [0, 0.5, 1])
+      for (const t of makeRound(stop.young.skill, { level: 1, g }, rand))
+        assert.ok(t.skill !== "add" && t.skill !== "sub");
+  }
+});
+
 test("age 5–6: no arithmetic anywhere, at any difficulty", () => {
-  for (const stop of FOREST)
+  for (const stop of ALL_STOPS)
     for (const g of [0, 0.5, 1]) {
       assert.notEqual(playableSkill(stop.skill, 1), "add");
       assert.notEqual(playableSkill(stop.skill, 1), "sub");

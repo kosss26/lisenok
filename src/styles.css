@@ -3255,3 +3255,28 @@ html[data-vt="zoom"]::view-transition-new(root) {
     animation: none !important;
   }
 }
+
+/* ---------- the sea path ---------- */
+/* the two sea pictures barely overlap: the last beach clearing sits right at the seam */
+/* here the beach (below) fades into the rocky coast at its top edge, over the coast picture */
+.world-sea .forest-bg-2 {
+  height: 54%;
+  z-index: 0;
+  -webkit-mask-image: none;
+  mask-image: none;
+}
+.world-sea .forest-bg-1 {
+  z-index: 1;
+  -webkit-mask-image: linear-gradient(transparent, black 8%);
+  mask-image: linear-gradient(transparent, black 8%);
+}
+/* a wide soft band of sea haze hides where the beach meets the rocky coast */
+.world-sea .forest-seam {
+  top: 46%;
+  height: 10%;
+  background: linear-gradient(
+    rgba(236, 228, 200, 0),
+    rgba(236, 228, 200, 0.5) 50%,
+    rgba(236, 228, 200, 0)
+  );
+}

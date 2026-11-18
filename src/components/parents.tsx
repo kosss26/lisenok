@@ -1,6 +1,7 @@
 /** Parents' corner (opened by holding the gear button): child, progress, time limit, sound. */
 import { useEffect, useState } from "react";
-import { FOREST, SKILL_NAMES, type Skill } from "../content/forest";
+import { SKILL_NAMES, type Skill } from "../content/forest";
+import { WORLD_LIST } from "../content/worlds";
 import { NAMES } from "../content/names";
 import { WORDS } from "../content/words";
 import { say } from "../game/audio";
@@ -148,7 +149,9 @@ export function Parents() {
             <div className="stats-row">
               <div className="stat">
                 <b>
-                  {starsIn(p)}/{FOREST.length}
+                  {WORLD_LIST.map((w) => `${w.name} ${starsIn(p, w.stops)}/${w.stops.length}`).join(
+                    ", ",
+                  )}
                 </b>
                 <span>звёзд в лесу</span>
               </div>
