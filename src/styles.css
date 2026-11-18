@@ -1142,7 +1142,9 @@ img {
 
 .card {
   position: relative;
-  flex: 1 1 auto;
+  /* as tall as its content, centred in the free space between the prompt and the answers */
+  flex: 0 1 auto;
+  margin-block: auto;
   min-height: 0;
   display: flex;
   flex-direction: column;
@@ -1155,8 +1157,8 @@ img {
   box-shadow: var(--shadow);
 }
 .card-pic {
-  max-height: 58%;
-  max-width: 70%;
+  height: clamp(130px, 32cqh, 280px);
+  max-width: 80%;
   min-height: 0;
   object-fit: contain;
   flex: 1 1 auto;
@@ -1231,7 +1233,7 @@ img {
 .card-compare {
   flex-direction: row;
   gap: 14px;
-  font-size: clamp(34px, 10cqw, 48px);
+  font-size: clamp(44px, 13cqw, 60px);
   font-weight: 900;
 }
 .cmp-box,
@@ -1268,22 +1270,22 @@ img {
 .ones-rows {
   display: grid;
   grid-template-columns: repeat(5, auto);
-  gap: 4px 8px;
+  gap: 6px 4px;
 }
 .count-item {
   position: relative;
-  width: clamp(44px, 15cqw, 64px);
-  height: clamp(44px, 15cqw, 64px);
+  width: clamp(52px, 19cqw, 80px);
+  height: clamp(52px, 19cqw, 80px);
   border-radius: 14px;
   transition: transform 0.15s;
 }
 .ones-rows .count-item {
-  width: clamp(38px, 11.5cqw, 52px);
-  height: clamp(38px, 11.5cqw, 52px);
+  width: clamp(44px, 15.5cqw, 68px);
+  height: clamp(44px, 15.5cqw, 68px);
 }
 .count-tens .count-item {
-  width: 34px;
-  height: 34px;
+  width: 40px;
+  height: 40px;
 }
 .count-pic {
   width: 100%;
@@ -1340,8 +1342,8 @@ img {
   border-color: var(--teal);
 }
 .ten-pic {
-  width: clamp(18px, 5.4cqw, 26px);
-  height: clamp(17px, 2.9cqh, 24px);
+  width: clamp(20px, 6cqw, 30px);
+  height: clamp(19px, 3.3cqh, 28px);
   object-fit: contain;
 }
 
@@ -1367,8 +1369,8 @@ img {
   animation: pop-in 0.5s ease-out both 0.4s;
 }
 .math-pic {
-  width: clamp(30px, 10cqw, 46px);
-  height: clamp(30px, 10cqw, 46px);
+  width: clamp(36px, 12cqw, 56px);
+  height: clamp(36px, 12cqw, 56px);
   object-fit: contain;
   transition:
     opacity 0.6s,
@@ -1383,7 +1385,7 @@ img {
   display: flex;
   align-items: center;
   gap: 10px;
-  font-size: clamp(36px, 11cqw, 52px);
+  font-size: clamp(44px, 13cqw, 62px);
   font-weight: 900;
 }
 .math-op {
@@ -1625,7 +1627,7 @@ img {
 
 /* build a word */
 .card-build .card-pic {
-  max-height: 52%;
+  height: clamp(110px, 26cqh, 230px);
 }
 .slots {
   display: flex;
@@ -2168,14 +2170,16 @@ img {
 }
 .drop-card {
   position: relative;
-  flex: 1 1 auto;
+  flex: 0 1 auto;
+  margin-block: auto;
   min-height: 0;
   display: flex;
   flex-direction: column;
   border-radius: 28px;
 }
 .drop-card > .card {
-  flex: 1 1 auto;
+  flex: 0 1 auto;
+  margin-block: 0;
 }
 .drop-card > .card,
 .slots .slot {
