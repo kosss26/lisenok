@@ -5,6 +5,7 @@ import { numKey, shown, sylKey, voiceLines } from "../content/voice";
 import { AGAIN, PRAISE } from "../content/voice";
 import { say, sfx } from "../game/audio";
 import { getProgress } from "../game/progress";
+import { vibrate } from "../game/haptics";
 import { useDrag } from "../game/drag";
 import type { BuildTask, ChoiceTask, Option, Task, Visual } from "../game/tasks";
 import { Pic, SpeakerIcon } from "./kit";
@@ -22,21 +23,50 @@ function praise() {
 
 export type Solved = (mistakes: number, hinted: boolean) => void;
 export type Mood = "idle" | "happy" | "oops";
+/** the fox helps a hesitating child: 1 = glances toward the answer, 2 = points at it */
+export type Guide = { stage: 1 | 2; x: number; y: number } | null;
+type OnGuide = (g: Guide) => void;
 
 export function TaskView({
   task,
   onSolved,
   onMood,
+  onGuide = () => {},
 }: {
   task: Task;
   onSolved: Solved;
   onMood: (m: Mood) => void;
+  onGuide?: OnGuide;
 }) {
   return task.kind === "choice" ? (
-    <Choice task={task} onSolved={onSolved} onMood={onMood} />
+    <Choice task={task} onSolved={onSolved} onMood={onMood} onGuide={onGuide} />
   ) : (
-    <Build task={task} onSolved={onSolved} onMood={onMood} />
+    <Build task={task} onSolved={onSolved} onMood={onMood} onGuide={onGuide} />
   );
+}
+
+/** seconds without an answer before the fox glances at the answer, then points at it */
+export const GLANCE_AFTER = 9000;
+export const POINT_AFTER = 18000;
+
+/** Tells the fox where the answer is while the guide stage is on (and nothing once it is off). */
+function useGuideTarget(
+  stage: 0 | 1 | 2,
+  root: React.RefObject<HTMLElement | null>,
+  selector: string,
+  onGuide: OnGuide,
+) {
+  useEffect(() => {
+    const el = stage ? root.current?.querySelector<HTMLElement>(selector) : null;
+    if (!el) {
+      onGuide(null);
+      return;
+    }
+    const r = el.getBoundingClientRect();
+    onGuide({ stage: stage as 1 | 2, x: r.left + r.width / 2, y: r.top + r.height / 2 });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [stage, selector]);
+  useEffect(() => () => onGuide(null), [onGuide]);
 }
 
 function PromptBar({
@@ -76,6 +106,22 @@ function useAnswering(task: Task, onSolved: Solved, onMood: (m: Mood) => void) {
   const [solved, setSolved] = useState(false);
   const live = useRef(true);
   const answered = useRef(false);
+  /** 0 → 1 (glance) → 2 (point) while the child waits; any answer starts the wait again */
+  const [wait, setWait] = useState<0 | 1 | 2>(0);
+  const [activity, setActivity] = useState(0);
+  useEffect(() => {
+    if (solved) return;
+    setWait(0);
+    const a = window.setTimeout(() => setWait(1), GLANCE_AFTER);
+    const b = window.setTimeout(() => {
+      setWait(2);
+      setHinted(true); // pointing at the answer is a hint, too (the word comes back later)
+    }, POINT_AFTER);
+    return () => {
+      window.clearTimeout(a);
+      window.clearTimeout(b);
+    };
+  }, [task, mistakes, activity, solved]);
   useEffect(() => {
     live.current = true;
     // a quick child may answer before the question starts: then it is not read out over the praise
@@ -91,6 +137,7 @@ function useAnswering(task: Task, onSolved: Solved, onMood: (m: Mood) => void) {
     void say(task.hint);
   };
   const wrong = (spoken?: string) => {
+    void vibrate([18, 60, 18]);
     const m = mistakes + 1;
     setMistakes(m);
     void sfx("wrong", 0.55);
@@ -105,6 +152,7 @@ function useAnswering(task: Task, onSolved: Solved, onMood: (m: Mood) => void) {
   };
   const right = (spoken: string[] = []) => {
     answered.current = true;
+    void vibrate(30);
     setSolved(true);
     void sfx("right");
     onMood("happy");
@@ -125,6 +173,7 @@ function useAnswering(task: Task, onSolved: Solved, onMood: (m: Mood) => void) {
     void say([...spoken, praise()]).then(next);
     window.setTimeout(next, PRAISE_WAIT);
   };
+  const showHint = hinted || mistakes >= 2;
   return {
     mistakes,
     hinted,
@@ -132,8 +181,12 @@ function useAnswering(task: Task, onSolved: Solved, onMood: (m: Mood) => void) {
     hint,
     wrong,
     right,
-    showHint: hinted || mistakes >= 2,
+    /** a step forward (a piece placed): the hesitation clock starts again */
+    poke: () => setActivity((n) => n + 1),
+    showHint,
     reveal: mistakes >= 3,
+    /** what the fox does: 0 nothing, 1 glance, 2 point (and wrong options fade, the target glows) */
+    guide: (solved ? 0 : showHint || wait === 2 ? 2 : wait) as 0 | 1 | 2,
   };
 }
 
@@ -142,12 +195,16 @@ function Choice({
   task,
   onSolved,
   onMood,
+  onGuide,
 }: {
   task: ChoiceTask;
   onSolved: Solved;
   onMood: (m: Mood) => void;
+  onGuide: OnGuide;
 }) {
   const a = useAnswering(task, onSolved, onMood);
+  const rootRef = useRef<HTMLDivElement | null>(null);
+  useGuideTarget(a.guide, rootRef, '.option[data-answer="1"]', onGuide);
   const [off, setOff] = useState<string[]>([]);
   const [picked, setPicked] = useState<string | null>(null);
   const [shaking, setShaking] = useState<string | null>(null);
@@ -185,9 +242,12 @@ function Choice({
   };
 
   return (
-    <div className={`task task-${task.skill} layout-${task.layout}`}>
+    <div ref={rootRef} className={`task task-${task.skill} layout-${task.layout} guide-${a.guide}`}>
       <PromptBar task={task} onRepeat={() => void say(task.prompt)} onHint={a.hint} />
-      <div ref={cardRef} className={`drop-card ${drag.near !== null ? "is-near" : ""}`}>
+      <div
+        ref={cardRef}
+        className={`drop-card ${drag.near !== null ? "is-near" : ""} ${a.guide === 2 ? "is-target" : ""}`}
+      >
         <VisualCard
           visual={task.visual}
           task={task}
@@ -208,7 +268,8 @@ function Choice({
                 off.includes(o.id) ? "is-off" : "",
                 picked === o.id ? "is-right" : "",
                 shaking === o.id ? "is-shaking" : "",
-                a.showHint && isAnswer && !a.solved ? "is-hint" : "",
+                a.guide === 2 && isAnswer ? "is-hint" : "",
+                a.guide === 2 && !isAnswer && !off.includes(o.id) ? "is-faded" : "",
                 a.reveal && isAnswer && !a.solved ? "is-reveal" : "",
               ].join(" ")}
               data-answer={isAnswer ? "1" : undefined}
@@ -452,12 +513,15 @@ function Build({
   task,
   onSolved,
   onMood,
+  onGuide,
 }: {
   task: BuildTask;
   onSolved: Solved;
   onMood: (m: Mood) => void;
+  onGuide: OnGuide;
 }) {
   const a = useAnswering(task, onSolved, onMood);
+  const rootRef = useRef<HTMLDivElement | null>(null);
   const [used, setUsed] = useState<number[]>([]);
   const [shaking, setShaking] = useState<number | null>(null);
   /** slots whose letter has landed (the letter flies there from its tile first) */
@@ -468,6 +532,7 @@ function Build({
   const placed = used.length;
   const done = placed === task.target.length;
   const nextIdx = task.pieces.findIndex((p, i) => !used.includes(i) && p === task.target[placed]);
+  useGuideTarget(a.guide, rootRef, '.piece[data-answer="1"]', onGuide);
 
   const tap = (i: number, dropped?: DOMRect) => {
     if (done || used.includes(i)) return;
@@ -484,6 +549,8 @@ function Build({
         a.right([task.prompt[1]]);
       } else {
         void sfx("pick");
+        void vibrate(12);
+        a.poke();
         if (task.unit === "syllable") void say([sylKey(task.pieces[i])], 0);
       }
     } else {
@@ -508,13 +575,16 @@ function Build({
   };
 
   return (
-    <div className={`task task-${task.skill} task-build unit-${task.unit}`}>
+    <div
+      ref={rootRef}
+      className={`task task-${task.skill} task-build unit-${task.unit} guide-${a.guide}`}
+    >
       <PromptBar task={task} onRepeat={() => void say(task.prompt)} onHint={a.hint} />
       <div className="card card-build">
         <Pic name={task.pic} className="card-pic" />
         <div
           ref={slotsRef}
-          className={`slots n${task.target.length} ${drag.near !== null ? "is-near" : ""}`}
+          className={`slots n${task.target.length} ${drag.near !== null || a.guide === 2 ? "is-near" : ""}`}
         >
           {task.target.map((piece, i) => (
             <span
@@ -549,7 +619,8 @@ function Build({
               drag.dragging === String(i) ? "is-dragging" : "",
               used.includes(i) ? "is-used" : "",
               shaking === i ? "is-shaking" : "",
-              a.showHint && i === nextIdx && !done ? "is-hint" : "",
+              a.guide === 2 && i === nextIdx && !done ? "is-hint" : "",
+              a.guide === 2 && i !== nextIdx && !used.includes(i) ? "is-faded" : "",
             ].join(" ")}
             data-answer={i === nextIdx ? "1" : undefined}
             aria-label={piece}

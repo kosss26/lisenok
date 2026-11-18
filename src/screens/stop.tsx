@@ -4,7 +4,8 @@ import { FOREST, type Stop } from "../content/forest";
 import { introKey, outroKey } from "../content/voice";
 import { useDialogue } from "../game/dialogue";
 import { BackButton, Fox, Pic, Scene } from "../components/kit";
-import { TaskView, type Mood } from "../components/tasks";
+import { TaskView, type Guide, type Mood } from "../components/tasks";
+import { TaskFriends } from "../components/friends";
 import { setScene, sfx, stopVoice } from "../game/audio";
 import { finishStop, getProgress, recordTask, stopOpen, weakWordIds } from "../game/progress";
 import { makeRound, type Task } from "../game/tasks";
@@ -41,6 +42,7 @@ function StopGame({ stopIndex }: { stopIndex: number }) {
   );
   const [step, setStep] = useState(0);
   const [mood, setMood] = useState<Mood>("idle");
+  const [guide, setGuide] = useState<Guide>(null);
   const [reward, setReward] = useState<{ first: boolean; level: "up" | "down" | null } | null>(
     null,
   );
@@ -58,9 +60,6 @@ function StopGame({ stopIndex }: { stopIndex: number }) {
     setPhase("reward");
     void sfx("star");
   };
-
-  const foxPose = mood === "happy" ? "cheer" : mood === "oops" ? "think" : "point";
-  const residentPose = mood === "happy" ? "-happy" : mood === "oops" ? "-sad" : "";
 
   return (
     <Scene bg="bg-clearing" className={`stop-screen phase-${phase}`}>
@@ -90,11 +89,14 @@ function StopGame({ stopIndex }: { stopIndex: number }) {
 
       {phase === "task" && (
         <>
-          <TaskView key={step} task={round[step]} onSolved={solved} onMood={setMood} />
-          <div className="task-friends" aria-hidden>
-            <Pic name={stop.resident + residentPose} className={`friend-resident mood-${mood}`} />
-            <Fox pose={foxPose} className={`friend-fox mood-${mood}`} />
-          </div>
+          <TaskView
+            key={step}
+            task={round[step]}
+            onSolved={solved}
+            onMood={setMood}
+            onGuide={setGuide}
+          />
+          <TaskFriends who={stop.resident} name={stop.name} mood={mood} guide={guide} />
         </>
       )}
 

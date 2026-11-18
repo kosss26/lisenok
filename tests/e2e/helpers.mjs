@@ -23,7 +23,7 @@ export const KEY = "lisenok:progress";
 export const artRe = (name) => new RegExp(`/art/${name}\\.(avif|webp)(\\?|$)`);
 
 /** `t` is the node:test context: the browser closes even when an assertion fails. */
-export async function openPhone(t, { progress, path = "", offline = false } = {}) {
+export async function openPhone(t, { progress, path = "", offline = false, beforeGoto } = {}) {
   const browser = WEBKIT
     ? await webkit.launch()
     : await chromium.launch({ executablePath: process.env.PW_CHROMIUM || undefined });
@@ -71,6 +71,7 @@ export async function openPhone(t, { progress, path = "", offline = false } = {}
     },
     [progress ?? null, KEY],
   );
+  if (beforeGoto) await beforeGoto(context, page);
   await page.goto(BASE + path.replace(/^\//, ""), { waitUntil: "networkidle" });
   await page.waitForTimeout(400);
   return { browser, context, page, errors };

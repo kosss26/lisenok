@@ -182,7 +182,11 @@ export function onSpeaking(fn: (on: boolean) => void) {
     speakingListeners = new Set([...speakingListeners].filter((f) => f !== fn));
   };
 }
+let speakingNow = false;
+/** a voice line is playing right now (a tickle giggle then waits its turn: it never cuts a task) */
+export const isSpeaking = () => speakingNow;
 function duck(on: boolean) {
+  speakingNow = on;
   speakingListeners.forEach((f) => f(on));
   if (!ctx || !musicBus) return;
   const target = MUSIC_BASE * volumes.music * (on ? 0.35 : 1);

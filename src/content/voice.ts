@@ -56,9 +56,24 @@ export const introKey = (stop: string, i: number) => `dlg-${stop}-${i}`;
 export const outroKey = (stop: string, i: number) => `bye-${stop}-${i}`;
 
 /** Lines spoken by a resident get their own voice; everything else is "xenia" (the fox and the narrator). */
+/** what a forest resident says when the child tickles it (in its own voice) */
+export const TICKLE: Record<string, string> = {
+  hedgehog: "Хи-хи! Щекотно! Я сейчас свернусь клубочком!",
+  squirrel: "Ой, щекотно! Хи-хи!",
+  hare: "Хи-хи! Сейчас как прыгну!",
+  owl: "Угу-угу! Щекотно!",
+  bear: "Хо-хо-хо! Щекотно!",
+  beaver: "Хи-хи! Ой, мой хвостик!",
+  badger: "Ой-ой, щекотно!",
+  mouse: "Пи-пи! Хи-хи!",
+  frog: "Ква-ква! Хи-хи!",
+};
+export const tickleKey = (who: string) => `touch-${who}`;
+
 export function voiceSpeakers(): Record<string, { speaker: string; pitch: number }> {
   const out: Record<string, { speaker: string; pitch: number }> = {};
   for (const stop of FOREST) {
+    out[tickleKey(stop.id)] = stop.voice;
     stop.intro.forEach((l, i) => {
       if (l.who === "res") out[introKey(stop.id, i)] = stop.voice;
     });
@@ -119,6 +134,7 @@ const FIXED: Record<string, string> = {
   "forest-done":
     "Ура! Все звёзды леса собраны! Они снова сияют на небе. Скоро мы отправимся к морю!",
   album: "Это твой альбом сокровищ. Каждый житель леса дарит подарок.",
+  "touch-fox": "Хи-хи! Щекотно!",
   "glade-hello":
     "Это лесная полянка! Здесь можно играть сколько захочешь. А после каждых пяти заданий нас ждёт находка.",
   "glade-find": "Смотри, что мы нашли на полянке!",
@@ -208,6 +224,7 @@ export function voiceLines(): Record<string, string> {
     stop.intro.forEach((l, i) => (lines[introKey(stop.id, i)] = l.text));
     stop.outro.forEach((l, i) => (lines[outroKey(stop.id, i)] = l.text));
   }
+  for (const [who, text] of Object.entries(TICKLE)) lines[tickleKey(who)] = text;
   for (const { id, name } of NAMES) {
     lines[`name-${id}-hi`] = `Привет, ${name}! Отправимся в путь?`;
     lines[`name-${id}-bravo`] = `Молодец, ${name}!`;

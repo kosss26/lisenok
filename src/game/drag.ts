@@ -6,6 +6,7 @@
  * keyboard — keep working as the accessible way to answer.
  */
 import { useRef, useState, type CSSProperties, type PointerEvent } from "react";
+import { vibrate } from "./haptics";
 
 export type Zone = {
   /** the area that accepts a drop (enlarged by SLACK px on every side) */
@@ -112,7 +113,10 @@ export function useDrag<K extends string | number>({
         }
       }
       const at = locate(dx, dy, p.base);
-      if (at.near !== null && at.near !== p.near) onNear?.(at.near);
+      if (at.near !== null && at.near !== p.near) {
+        vibrate(8); // a tiny "click" as the magnet catches the item
+        onNear?.(at.near);
+      }
       p.near = at.near;
       setActive({ key: String(key), ...at });
     },

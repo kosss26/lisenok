@@ -4,7 +4,8 @@ import { FOREST } from "../content/forest";
 import { FINDS, nextFind } from "../content/glade";
 import { wordKey } from "../content/voice";
 import { BackButton, Fox, Pic, Scene } from "../components/kit";
-import { TaskView, type Mood } from "../components/tasks";
+import { TaskView, type Guide, type Mood } from "../components/tasks";
+import { TaskFriends } from "../components/friends";
 import { say, setScene, sfx, stopVoice } from "../game/audio";
 import {
   addFind,
@@ -41,7 +42,8 @@ function GladeGame() {
   const [find, setFind] = useState<(typeof FINDS)[number] | null>(null);
   const [all, setAll] = useState(false);
   const roundNo = useRef(0);
-  const friend = FOREST[roundNo.current % FOREST.length].resident;
+  const friend = FOREST[roundNo.current % FOREST.length];
+  const [guide, setGuide] = useState<Guide>(null);
 
   useEffect(() => {
     setScene(phase === "task" ? "tasks" : phase === "find" ? "celebrate" : "map");
@@ -81,8 +83,6 @@ function GladeGame() {
     setPhase("task");
   };
 
-  const foxPose = mood === "happy" ? "cheer" : mood === "oops" ? "think" : "point";
-  const residentPose = mood === "happy" ? "-happy" : mood === "oops" ? "-sad" : "-happy";
   const found = Object.keys(getProgress().finds).length;
 
   return (
@@ -123,11 +123,9 @@ function GladeGame() {
             task={round[step]}
             onSolved={solved}
             onMood={setMood}
+            onGuide={setGuide}
           />
-          <div className="task-friends" aria-hidden>
-            <Pic name={friend + residentPose} className={`friend-resident mood-${mood}`} />
-            <Fox pose={foxPose} className={`friend-fox mood-${mood}`} />
-          </div>
+          <TaskFriends who={friend.resident} name={friend.name} mood={mood} guide={guide} />
         </>
       )}
 
