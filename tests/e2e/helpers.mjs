@@ -7,17 +7,31 @@ import { chromium, devices, webkit } from "playwright";
 const WEBKIT = process.env.PW_BROWSER === "webkit";
 
 export const BASE = process.env.BASE_URL || "http://127.0.0.1:8080/";
+/** the forest path in order (18 stops, 5 tasks each) */
 export const STOPS = [
   "hedgehog",
   "squirrel",
-  "hare",
   "owl",
-  "bear",
-  "beaver",
-  "badger",
   "mouse",
+  "hare",
+  "beaver",
+  "hedgehog-2",
+  "squirrel-2",
   "frog",
+  "owl-2",
+  "mouse-2",
+  "hare-2",
+  "bear",
+  "beaver-2",
+  "badger",
+  "badger-2",
+  "bear-2",
+  "frog-2",
 ];
+export const ROUND = 5;
+/** progress where every stop before `id` is done */
+export const upTo = (id) =>
+  Object.fromEntries(STOPS.slice(0, STOPS.indexOf(id)).map((s) => [s, 1]));
 export const KEY = "lisenok:progress";
 /** a picture in any shipped format: AVIF in production where supported, WebP otherwise */
 export const artRe = (name) => new RegExp(`/art/${name}\\.(avif|webp)(\\?|$)`);
@@ -104,10 +118,11 @@ export async function solveTask(page) {
 
 /** Opens a stop from the forest path and plays its whole round. Returns after the reward screen. */
 export async function playStop(page, id) {
+  await page.locator(`.stop[data-stop="${id}"]`).scrollIntoViewIfNeeded();
   await page.click(`.stop[data-stop="${id}"]`);
   await page.waitForSelector(".help-btn");
   await page.click(".help-btn");
-  for (let i = 0; i < 3; i++) {
+  for (let i = 0; i < ROUND; i++) {
     await page.waitForSelector(".task");
     await solveTask(page);
     await page.waitForFunction(

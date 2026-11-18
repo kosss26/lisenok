@@ -171,7 +171,8 @@ function wordsFor({ level, g }: Tune, filter: (w: Word) => boolean = () => true)
     w.word.length * 10 + [...w.word].filter((c) => !EASY_LETTERS.includes(c)).length;
   const sorted = pool.filter(filter).sort((x, y) => hardness(x) - hardness(y));
   const n = Math.max(Math.min(8, sorted.length), Math.round(sorted.length * (0.3 + 0.7 * g)));
-  return sorted.slice(0, n);
+  // words the child stumbled on stay in the game whatever the difficulty
+  return [...sorted.slice(0, n), ...sorted.slice(n).filter((w) => weakIds.has(w.id))];
 }
 
 // ---------- skills ----------

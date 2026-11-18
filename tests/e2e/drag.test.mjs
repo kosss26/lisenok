@@ -2,9 +2,8 @@
 // A wrong piece springs back; tapping keeps working (the other tests answer by tapping).
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { STOPS, dragTo, openPhone } from "./helpers.mjs";
+import { dragTo, openPhone, upTo } from "./helpers.mjs";
 
-const upTo = (id) => Object.fromEntries(STOPS.slice(0, STOPS.indexOf(id)).map((s) => [s, 1]));
 async function startStop(t, id, level = 1) {
   const r = await openPhone(t, {
     path: `/forest/${id}`,
@@ -40,7 +39,7 @@ test("build a word by dragging letters; a wrong letter springs back", async (t) 
 });
 
 test("magnet: the target lights up when a number comes close; dropping answers", async (t) => {
-  const { page, errors } = await startStop(t, "bear");
+  const { page, errors } = await startStop(t, "bear", 2);
   await dragTo(page, '.option[data-answer="1"]', ".math-answer", { drop: false });
   assert.equal(await page.locator(".drop-card.is-near").count(), 1);
   await page.mouse.up();

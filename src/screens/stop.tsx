@@ -64,9 +64,9 @@ function StopGame({ stopIndex }: { stopIndex: number }) {
     recordTask(round[step].skill, m, hinted, round[step].word);
     mistakes.current += m + (hinted && m === 0 ? 1 : 0);
     if (step + 1 < round.length) {
-      // it was hard: the rest of the round gets easier at once (the automatic shift goes down)
-      if (m >= 2 && getProgress().settings.auto) {
-        easeNow();
+      // a mistake: the rest of the round gets easier at once (the automatic shift goes down)
+      if (m >= 1 && getProgress().settings.auto) {
+        easeNow(Math.min(0.15, 0.05 * m));
         const easier = makeRound(
           stop.skill,
           tuneFor(getProgress(), stopIndex),

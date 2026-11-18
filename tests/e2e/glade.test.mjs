@@ -18,7 +18,7 @@ test("practice round: weak skill first, a find, more rounds, album", async (t) =
       intro: true,
       done: doneAll,
       forestCelebrated: true,
-      settings: { level: 1, auto: false },
+      settings: { level: 2, auto: false },
       skills: { sub: { tasks: 6, firstTry: 1, mistakes: 8, hints: 2 } },
     },
   });

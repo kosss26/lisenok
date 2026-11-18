@@ -16,10 +16,11 @@ test("all skills × levels give valid rounds", () => {
   for (let seed = 0; seed < 60; seed++) {
     let s = seed * 9301 + 49297;
     const rand = () => (s = (s * 9301 + 49297) % 233280) / 233280;
+    const g = [0, 0.3, 0.6, 1][seed % 4];
     for (const stop of FOREST) {
       for (const level of [1, 2, 3] as Level[]) {
-        const round = makeRound(stop.skill, level, rand);
-        assert.equal(round.length, 3);
+        const round = makeRound(stop.skill, { level, g }, rand);
+        assert.equal(round.length, 5);
         for (const t of round) {
           for (const k of [...t.prompt, ...t.hint]) assert.ok(lines[k], `voice ${k}`);
           if (t.kind === "choice") {
@@ -55,6 +56,9 @@ test("every stop has art and voice", () => {
     assert.ok(stop.intro.length && stop.outro.length);
     stop.intro.forEach((l, i) => assert.equal(shown(lines[introKey(stop.id, i)]), l.text));
     stop.outro.forEach((l, i) => assert.equal(shown(lines[outroKey(stop.id, i)]), l.text));
+    stop.young?.intro.forEach((l, i) =>
+      assert.equal(shown(lines[introKey(`${stop.id}-young`, i)]), l.text),
+    );
   }
 });
 
@@ -134,9 +138,16 @@ test("practice on the glade: weak skills and weak words first, then mixed review
     const rand = () => (s = (s * 9301 + 49297) % 233280) / 233280;
     for (const level of [1, 2, 3] as Level[]) {
       const weakWord = WORDS_BY_LEVEL[level][seed % WORDS_BY_LEVEL[level].length];
-      const tasks = makePractice(level, ["sub"], new Set([weakWord]), rand);
+      const weakSkill = level === 1 ? "compare" : "sub";
+      const tasks = makePractice(
+        level,
+        [weakSkill, ...(level === 1 ? (["sub"] as const) : [])],
+        new Set([weakWord]),
+        rand,
+      );
       assert.equal(tasks.length, PRACTICE);
-      assert.equal(tasks[0].skill, "sub", "weak skill first");
+      assert.equal(tasks[0].skill, weakSkill, "weak skill first");
+      if (level === 1) assert.ok(tasks.every((t) => t.skill !== "add" && t.skill !== "sub"));
       assert.ok(
         tasks.slice(1, 3).some((t) => t.word === weakWord),
         `weak word ${weakWord} early (level ${level})`,

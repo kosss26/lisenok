@@ -1,4 +1,4 @@
-// Title, story, world map with locked worlds, the path order, mistakes and hints, auto level.
+// Title, story, world map with locked worlds, the path order, mistakes and hints, auto difficulty.
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { artRe, openPhone, playStop, saved } from "./helpers.mjs";
@@ -15,10 +15,10 @@ test("first launch: story, map, only the forest is open", async (t) => {
   assert.equal(await page.locator(".map-screen").count(), 1, "locked world does not open");
   await page.click(".world-forest");
   await page.waitForSelector(".forest-screen");
-  assert.equal(await page.locator(".stop").count(), 9);
-  assert.equal(await page.locator(".stop.is-locked").count(), 8);
+  assert.equal(await page.locator(".stop").count(), 18);
+  assert.equal(await page.locator(".stop.is-locked").count(), 17);
   // a locked stop does not open, the first one does
-  await page.click('.stop[data-stop="frog"]');
+  await page.click('.stop[data-stop="owl"]');
   assert.equal(await page.locator(".forest-screen").count(), 1);
   await page.click('.stop[data-stop="hedgehog"]');
   await page.waitForSelector(".hello");
@@ -49,7 +49,7 @@ test("dialogue: resident and fox take turns, poses change, a tap skips a line", 
 });
 
 test("a locked stop cannot be opened by address", async (t) => {
-  const { page } = await openPhone(t, { path: "/forest/frog", progress: { intro: true } });
+  const { page } = await openPhone(t, { path: "/forest/frog-2", progress: { intro: true } });
   await page.waitForSelector(".forest-screen");
   assert.match(page.url(), /\/forest$/);
 });
@@ -92,15 +92,26 @@ test("counting: tapping objects counts them aloud", async (t) => {
   assert.ok(voice.includes("n-1") && voice.includes("n-2"), "numbers spoken");
 });
 
-test("auto level: two clean stops make tasks harder", async (t) => {
+test("auto difficulty: never changes the age level; mistakes ease the round at once", async (t) => {
   const { page, errors } = await openPhone(t, {
     path: "/forest",
     progress: { intro: true, settings: { level: 1, auto: true } },
   });
   await playStop(page, "hedgehog");
+  let p = await saved(page);
+  assert.equal(p.settings.level, 1, "a 5-year-old stays at age level 1");
+  assert.ok(p.adapt > 0 && p.adapt <= 0.05, `a clean stop: only a little harder (${p.adapt})`);
   await page.click(".next-btn");
-  await playStop(page, "squirrel");
-  assert.equal(await page.locator(".level-note").count(), 1);
-  assert.equal((await saved(page)).settings.level, 2);
+  await page.click('.stop[data-stop="squirrel"]');
+  await page.click(".help-btn");
+  await page.waitForSelector(".options");
+  const wrong = () => page.locator(".option:not([data-answer]):not(.is-off)").first().click();
+  await wrong();
+  await page.waitForTimeout(600);
+  await page.locator('.option[data-answer="1"]').click();
+  await page.waitForFunction(() => document.querySelectorAll(".dot.is-done").length >= 1);
+  p = await saved(page);
+  assert.ok(p.adapt < 0, `two tries: easier at once (${p.adapt})`);
+  assert.equal(p.settings.level, 1);
   assert.deepEqual(errors, []);
 });

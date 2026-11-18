@@ -13,7 +13,7 @@
     "format": "prettier --write .",
     "test": "node --test src/**/*.test.ts",
     "voice:list": "node tools/voice-lines.ts",
-    "test:e2e": "node --test --test-concurrency=1 --test-timeout=300000 tests/e2e/*.test.mjs"
+    "test:e2e": "node --test --test-concurrency=1 --test-timeout=900000 tests/e2e/*.test.mjs"
   },
   "dependencies": {
     "@fontsource-variable/nunito": "^5.2.0",
