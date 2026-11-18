@@ -65,15 +65,20 @@ function PromptBar({
   );
 }
 
+/** longest wait for the praise clip before the next task comes anyway (ms) */
+const PRAISE_WAIT = 3500;
+
 /** Shared answer logic: mistakes, hint after the 2nd, show the answer after the 3rd. */
 function useAnswering(task: Task, onSolved: Solved, onMood: (m: Mood) => void) {
   const [mistakes, setMistakes] = useState(0);
   const [hinted, setHinted] = useState(false);
   const [solved, setSolved] = useState(false);
   const live = useRef(true);
+  const answered = useRef(false);
   useEffect(() => {
     live.current = true;
-    const t = window.setTimeout(() => void say(task.prompt), 350);
+    // a quick child may answer before the question starts: then it is not read out over the praise
+    const t = window.setTimeout(() => answered.current || void say(task.prompt), 350);
     return () => {
       live.current = false;
       window.clearTimeout(t);
@@ -98,18 +103,26 @@ function useAnswering(task: Task, onSolved: Solved, onMood: (m: Mood) => void) {
     else void say([...before, `again-${rnd(AGAIN)}`]);
   };
   const right = (spoken: string[] = []) => {
+    answered.current = true;
     setSolved(true);
     void sfx("right");
     onMood("happy");
     const started = Date.now();
-    void say([...spoken, praise()]).then(() => {
+    // Move on when the praise has been said — but never wait for it longer than PRAISE_WAIT:
+    // on a slow network the clip may still be downloading, and the child must not be stuck.
+    let moved = false;
+    const next = () => {
+      if (moved) return;
+      moved = true;
       const wait = Math.max(0, 1300 - (Date.now() - started));
       window.setTimeout(() => {
         if (!live.current) return;
         onMood("idle");
         onSolved(mistakes, hinted);
       }, wait + 250);
-    });
+    };
+    void say([...spoken, praise()]).then(next);
+    window.setTimeout(next, PRAISE_WAIT);
   };
   return {
     mistakes,
