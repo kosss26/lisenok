@@ -17,6 +17,8 @@ pick = {a for a in args if a != "only-missing"}
 lines = json.load(open("assets/voice-lines.json", encoding="utf-8"))
 # residents speak with their own Silero speaker and a pitch shift (key -> {speaker, pitch})
 voices = json.load(open("assets/voice-speakers.json", encoding="utf-8"))
+# hand-picked takes for clips the recogniser misheard (tools/voice-pick.py): key -> {"ssml"|"text", "speaker"?}
+overrides = json.load(open("assets/voice-overrides.json", encoding="utf-8"))
 out = "public/voice"
 
 # A lone vowel comes out of Silero as a ~60 ms blip, or glides into another vowel (ы -> и).
@@ -87,7 +89,12 @@ with tempfile.TemporaryDirectory() as tmp:
             continue
         speaker = voices.get(key, {}).get("speaker", SPEAKER)
         try:
-            if key in VOWELS:
+            if key in overrides:
+                o = overrides[key]
+                speaker = o.get("speaker", speaker)
+                kw = {"ssml_text": o["ssml"]} if "ssml" in o else {"text": o["text"]}
+                audio = model.apply_tts(speaker=speaker, sample_rate=RATE, put_accent=True, put_yo=True, **kw)
+            elif key in VOWELS:
                 audio = clear_vowel(VOWELS[key], speaker, key)
             elif key.startswith(("letter-", "syl-")):
                 # a lone letter or syllable: Silero tends to swallow the vowel, so try it plain and
