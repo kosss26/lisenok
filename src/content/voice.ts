@@ -4,7 +4,7 @@
  *   npm run voice:list && python3 tools/make-voice.py <v5_ru.pt> only-missing
  * ("+" before a vowel marks stress for the synthesizer.)
  */
-import { FOREST } from "./forest.ts";
+import { FOREST, type Line, type Voice } from "./forest.ts";
 import { stressed } from "./stress.ts";
 import { NAMES } from "./names.ts";
 import { LETTER_NAMES, SENTENCES, STORIES, SYLLABLES, WORDS } from "./words.ts";
@@ -57,7 +57,6 @@ export const outroKey = (stop: string, i: number) => `bye-${stop}-${i}`;
 /** the dialogue a stop uses for 5–6-year-olds (when it has one) */
 export const youngId = (stop: string) => `${stop}-young`;
 
-/** Lines spoken by a resident get their own voice; everything else is "xenia" (the fox and the narrator). */
 /** what a forest resident says when the child tickles it (in its own voice) */
 export const TICKLE: Record<string, string> = {
   hedgehog: "Хи-хи! Щекотно! Я сейчас свернусь клубочком!",
@@ -72,19 +71,16 @@ export const TICKLE: Record<string, string> = {
 };
 export const tickleKey = (who: string) => `touch-${who}`;
 
-export function voiceSpeakers(): Record<string, { speaker: string; pitch: number }> {
-  const out: Record<string, { speaker: string; pitch: number }> = {};
+/** Who says each line: the fox (masha), a resident (its own voice); every other line is the narrator (marina). */
+export function voiceCast(): Record<string, Voice | "fox"> {
+  const out: Record<string, Voice | "fox"> = { hi: "fox", [tickleKey("fox")]: "fox" };
+  for (const { id } of NAMES) out[`name-${id}-hi`] = "fox";
+  const add = (key: string, l: Line, v: Voice) => (out[key] = l.who === "res" ? v : "fox");
   for (const stop of FOREST) {
-    out[tickleKey(stop.id)] = stop.voice;
-    stop.intro.forEach((l, i) => {
-      if (l.who === "res") out[introKey(stop.id, i)] = stop.voice;
-    });
-    stop.outro.forEach((l, i) => {
-      if (l.who === "res") out[outroKey(stop.id, i)] = stop.voice;
-    });
-    stop.young?.intro.forEach((l, i) => {
-      if (l.who === "res") out[introKey(youngId(stop.id), i)] = stop.voice;
-    });
+    out[tickleKey(stop.id.replace(/-2$/, ""))] = stop.voice;
+    stop.intro.forEach((l, i) => add(introKey(stop.id, i), l, stop.voice));
+    stop.outro.forEach((l, i) => add(outroKey(stop.id, i), l, stop.voice));
+    stop.young?.intro.forEach((l, i) => add(introKey(youngId(stop.id), i), l, stop.voice));
   }
   return out;
 }

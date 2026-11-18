@@ -26,8 +26,8 @@ export type Stop = {
   skill: Skill;
   gift: string; // treasure picture
   giftName: string;
-  /** the resident's own voice: Silero speaker and pitch shift */
-  voice: { speaker: "aidar" | "baya" | "kseniya" | "eugene"; pitch: number };
+  /** the resident's own voice: Yandex SpeechKit voice, role and pitch shift in Hz */
+  voice: Voice;
   /** voiced dialogue before the tasks and after the star */
   intro: Line[];
   outro: Line[];
@@ -40,6 +40,20 @@ export type Stop = {
   young?: { skill: Skill; intro: Line[] };
 };
 
+export type Voice = { voice: "alena" | "lera" | "zahar"; role: "good" | "friendly"; pitch: number };
+// female characters get alena or lera, the male ones (bear, badger, beaver, frog) zahar; slight pitch shifts keep them apart
+const VOICES: Record<string, Voice> = {
+  hedgehog: { voice: "alena", role: "good", pitch: 20 },
+  squirrel: { voice: "lera", role: "friendly", pitch: 0 },
+  hare: { voice: "alena", role: "good", pitch: 50 },
+  owl: { voice: "alena", role: "good", pitch: -30 },
+  mouse: { voice: "lera", role: "friendly", pitch: 60 },
+  bear: { voice: "zahar", role: "good", pitch: -25 },
+  badger: { voice: "zahar", role: "good", pitch: 0 },
+  beaver: { voice: "zahar", role: "good", pitch: 25 },
+  frog: { voice: "zahar", role: "good", pitch: 45 },
+};
+
 type StopDef = Omit<Stop, "x" | "y" | "part">;
 
 const DEFS: StopDef[] = [
@@ -50,7 +64,7 @@ const DEFS: StopDef[] = [
     skill: "letters",
     gift: "t-acorn",
     giftName: "Золотой жёлудь",
-    voice: { speaker: "baya", pitch: 1.08 },
+    voice: VOICES.hedgehog,
     intro: [
       { who: "res", pose: "sad", text: "Ой-ой! Привет! Я ёжик. Ветер перепутал все мои буквы!" },
       { who: "fox", pose: "wave", text: "Не грусти, ёжик! Мы с другом тебе поможем." },
@@ -68,7 +82,7 @@ const DEFS: StopDef[] = [
     skill: "count",
     gift: "t-feather",
     giftName: "Синее пёрышко",
-    voice: { speaker: "kseniya", pitch: 1.1 },
+    voice: VOICES.squirrel,
     intro: [
       { who: "res", pose: "sad", text: "Ах, привет! Я белка. Зима скоро, а я сбилась со счёта!" },
       { who: "fox", pose: "point", text: "Давай считать вместе! Мой друг отлично считает." },
@@ -90,7 +104,7 @@ const DEFS: StopDef[] = [
     skill: "build",
     gift: "t-clover",
     giftName: "Клевер на удачу",
-    voice: { speaker: "baya", pitch: 1.16 },
+    voice: VOICES.hare,
     intro: [
       {
         who: "res",
@@ -112,7 +126,7 @@ const DEFS: StopDef[] = [
     skill: "read",
     gift: "t-firefly",
     giftName: "Светлячок в баночке",
-    voice: { speaker: "kseniya", pitch: 0.94 },
+    voice: VOICES.owl,
     intro: [
       {
         who: "res",
@@ -142,7 +156,7 @@ const DEFS: StopDef[] = [
     skill: "add",
     gift: "t-rowan",
     giftName: "Гроздь рябины",
-    voice: { speaker: "aidar", pitch: 1.0 },
+    voice: VOICES.bear,
     intro: [
       {
         who: "res",
@@ -176,7 +190,7 @@ const DEFS: StopDef[] = [
     skill: "syllables",
     gift: "t-whistle",
     giftName: "Деревянная свистулька",
-    voice: { speaker: "eugene", pitch: 1.03 },
+    voice: VOICES.beaver,
     intro: [
       { who: "res", pose: "sad", text: "Привет! Я бобр. Моя плотина из слогов развалилась!" },
       { who: "fox", pose: "think", text: "Соберём её снова, слог за слогом." },
@@ -198,7 +212,7 @@ const DEFS: StopDef[] = [
     skill: "sub",
     gift: "t-snail",
     giftName: "Ракушка улитки",
-    voice: { speaker: "aidar", pitch: 0.94 },
+    voice: VOICES.badger,
     intro: [
       {
         who: "res",
@@ -232,7 +246,7 @@ const DEFS: StopDef[] = [
     skill: "compare",
     gift: "t-pebble",
     giftName: "Полосатый камешек",
-    voice: { speaker: "kseniya", pitch: 1.24 },
+    voice: VOICES.mouse,
     intro: [
       {
         who: "res",
@@ -254,7 +268,7 @@ const DEFS: StopDef[] = [
     skill: "sentence",
     gift: "t-maple",
     giftName: "Кленовый листок",
-    voice: { speaker: "eugene", pitch: 1.1 },
+    voice: VOICES.frog,
     intro: [
       {
         who: "res",
@@ -281,7 +295,7 @@ const DEFS: StopDef[] = [
     skill: "letters",
     gift: "apple",
     giftName: "Румяное яблоко",
-    voice: { speaker: "baya", pitch: 1.08 },
+    voice: VOICES.hedgehog,
     intro: [
       {
         who: "res",
@@ -303,7 +317,7 @@ const DEFS: StopDef[] = [
     skill: "count",
     gift: "raspberry",
     giftName: "Ягодка малины",
-    voice: { speaker: "kseniya", pitch: 1.1 },
+    voice: VOICES.squirrel,
     intro: [
       {
         who: "res",
@@ -325,7 +339,7 @@ const DEFS: StopDef[] = [
     skill: "read",
     gift: "lantern",
     giftName: "Ночной фонарик",
-    voice: { speaker: "kseniya", pitch: 0.94 },
+    voice: VOICES.owl,
     intro: [
       { who: "res", pose: "sad", text: "Угу! В чаще темно, и я не вижу, где какое слово." },
       { who: "fox", pose: "read", text: "Мой друг прочитает слова даже в темноте!" },
@@ -343,7 +357,7 @@ const DEFS: StopDef[] = [
     skill: "compare",
     gift: "cheese",
     giftName: "Кусочек сыра",
-    voice: { speaker: "kseniya", pitch: 1.24 },
+    voice: VOICES.mouse,
     intro: [
       { who: "res", pose: "sad", text: "Пи-пи! Мы с братьями делим сыр и спорим, у кого больше!" },
       { who: "fox", pose: "think", text: "Давай сравним, и спор закончится." },
@@ -361,7 +375,7 @@ const DEFS: StopDef[] = [
     skill: "build",
     gift: "carrot",
     giftName: "Сладкая морковка",
-    voice: { speaker: "baya", pitch: 1.16 },
+    voice: VOICES.hare,
     intro: [
       { who: "res", pose: "sad", text: "Привет! Я прыгал по чаще, и мои слова опять рассыпались!" },
       { who: "fox", pose: "think", text: "Соберём их, буква за буквой." },
@@ -379,7 +393,7 @@ const DEFS: StopDef[] = [
     skill: "syllables",
     gift: "boat",
     giftName: "Деревянная лодочка",
-    voice: { speaker: "eugene", pitch: 1.03 },
+    voice: VOICES.beaver,
     intro: [
       { who: "res", pose: "sad", text: "Привет! Я строю мостик через пруд, а слоги перепутались!" },
       { who: "fox", pose: "think", text: "Сложим мостик из слогов вместе!" },
@@ -401,7 +415,7 @@ const DEFS: StopDef[] = [
     skill: "sub",
     gift: "bell",
     giftName: "Звонкий колокольчик",
-    voice: { speaker: "aidar", pitch: 0.94 },
+    voice: VOICES.badger,
     intro: [
       {
         who: "res",
@@ -431,7 +445,7 @@ const DEFS: StopDef[] = [
     skill: "add",
     gift: "honey",
     giftName: "Бочонок мёда",
-    voice: { speaker: "aidar", pitch: 1.0 },
+    voice: VOICES.bear,
     intro: [
       {
         who: "res",
@@ -461,7 +475,7 @@ const DEFS: StopDef[] = [
     skill: "sentence",
     gift: "crown",
     giftName: "Лесная корона",
-    voice: { speaker: "eugene", pitch: 1.1 },
+    voice: VOICES.frog,
     intro: [
       { who: "res", pose: "sad", text: "Ква! Мне прислали самые длинные записки во всём лесу!" },
       { who: "fox", pose: "read", text: "Мой друг справится. Он уже так много прочитал!" },
