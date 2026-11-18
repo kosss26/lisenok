@@ -2,6 +2,6 @@
 export const ASSET_VERSIONS: Record<string, string> = {
   "art": "fa24c9a7",
   "sfx": "afd9eda7",
-  "voice": "126f2602",
+  "voice": "bc9b8b9d",
   "music": "055b7ce3"
 };
