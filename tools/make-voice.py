@@ -51,7 +51,12 @@ def mark_word(w: str, unknown: set) -> str:
 def marked(key: str, unknown: set) -> str:
     o = OVERRIDE.get(key)
     text = (o.get("text") if isinstance(o, dict) else o) or LINES[key].replace("+", "")
-    return re.sub(r"[+А-Яа-яЁё]+", lambda m: mark_word(m.group(0), unknown), text)
+    text = re.sub(r"[+А-Яа-яЁё]+", lambda m: mark_word(m.group(0), unknown), text)
+    # a lone syllable or short word with «е» is otherwise often read with «ё» («че» -> «чё», «кеп» -> «кёп»,
+    # F2 of the vowel ~1100 Hz instead of ~2400): the stress mark pins it to «е»
+    if SINGLE.match(key) and "+" not in text and sum(c in VOWELS for c in text.lower()) == 1:
+        text = re.sub(r"([еЕ])", r"+\1", text, count=1)
+    return text
 
 
 def cast(key: str) -> dict:
