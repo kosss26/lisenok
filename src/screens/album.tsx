@@ -1,5 +1,6 @@
 import { useEffect } from "react";
 import { FOREST } from "../content/forest";
+import { FINDS } from "../content/glade";
 import { BackButton, Pic } from "../components/kit";
 import { IconLock } from "../components/icons";
 import { say, sfx } from "../game/audio";
@@ -39,6 +40,31 @@ export function Album() {
           );
         })}
       </div>
+      {Object.keys(p.finds).length > 0 && (
+        <>
+          <p className="album-sub">
+            Находки с полянки · {Object.keys(p.finds).length} из {FINDS.length}
+          </p>
+          <div className="album-grid album-finds">
+            {FINDS.map((f) => {
+              const n = p.finds[f.id] ?? 0;
+              return (
+                <button
+                  key={f.id}
+                  type="button"
+                  className={`album-slot ${n ? "is-have" : "is-empty"}`}
+                  aria-label={n ? f.name : "Пока не найдено"}
+                  onClick={() => (n ? void say([`w-${f.id}`]) : void sfx("tap"))}
+                >
+                  <Pic name={f.pic} className="album-pic" />
+                  <span className="album-name">{n ? f.name : "?"}</span>
+                  {n > 1 && <span className="album-times">×{n}</span>}
+                </button>
+              );
+            })}
+          </div>
+        </>
+      )}
       <div className="album-locked">
         {["Море", "Горы", "Город", "Космос"].map((w) => (
           <span key={w}>

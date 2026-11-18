@@ -36,6 +36,8 @@ export type Progress = {
   /** minutes a grown-up added today on the rest screen */
   extra: Record<string, number>;
   forestCelebrated: boolean;
+  /** лесная полянка: find id -> how many times found */
+  finds: Record<string, number>;
 };
 
 const DEFAULT: Progress = {
@@ -55,6 +57,7 @@ const DEFAULT: Progress = {
   playLog: {},
   extra: {},
   forestCelebrated: false,
+  finds: {},
 };
 
 export const today = () => {
@@ -209,6 +212,12 @@ export function weakSkills(p: Progress): Skill[] {
     .filter(([, s]) => s.tasks >= 3 && s.firstTry / s.tasks < 0.6)
     .map(([k]) => k);
 }
+
+/** a practice round on the glade is done: the child keeps the find */
+export function addFind(id: string) {
+  update((p) => ({ ...p, finds: { ...p.finds, [id]: (p.finds[id] ?? 0) + 1 } }));
+}
+export const forestDone = (p: Progress) => nextStopIndex(p) >= FOREST.length;
 
 // ---------- play time ----------
 export function addPlayTime(seconds: number) {

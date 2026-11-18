@@ -545,3 +545,56 @@ export function makeRound(
       return sentence(level, rand);
   }
 }
+
+// ---------- лесная полянка: free play after the forest ----------
+export const PRACTICE = 5;
+const ALL_SKILLS: Skill[] = [
+  "letters",
+  "count",
+  "build",
+  "read",
+  "add",
+  "syllables",
+  "sub",
+  "compare",
+  "sentence",
+];
+const WORD_SKILLS: Skill[] = ["read", "build", "syllables", "letters"];
+
+/**
+ * A practice round: tasks of the weak skills first (up to two), then up to two words the child
+ * stumbled on, then mixed review — no skill twice in a row, no word twice in a round.
+ */
+export function makePractice(
+  level: Level,
+  weakSkills: readonly Skill[],
+  weak: ReadonlySet<string>,
+  rand: Rand = Math.random,
+): Task[] {
+  const out: Task[] = [];
+  const words = new Set<string>();
+  const add = (t: Task | undefined) => {
+    if (!t || out.length >= PRACTICE || (t.word && words.has(t.word))) return false;
+    out.push(t);
+    if (t.word) words.add(t.word);
+    return true;
+  };
+  for (const s of shuffle(weakSkills, rand).slice(0, 2)) add(makeRound(s, level, rand, weak)[0]);
+  if (weak.size) {
+    let n = 0;
+    for (const s of shuffle(WORD_SKILLS, rand)) {
+      if (n >= 2) break;
+      const t = makeRound(s, level, rand, weak).find((x) => x.word && weak.has(x.word));
+      if (add(t)) n++;
+    }
+  }
+  for (let guard = 0; out.length < PRACTICE && guard < 60; guard++) {
+    const last = out[out.length - 1]?.skill;
+    const s = pick(
+      ALL_SKILLS.filter((k) => k !== last),
+      rand,
+    );
+    add(makeRound(s, level, rand, weak)[0]);
+  }
+  return out;
+}

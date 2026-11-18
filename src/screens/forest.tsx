@@ -158,6 +158,19 @@ export function Forest() {
         <StarCount n={starsIn(p)} total={FOREST.length} />
         <ParentsButton />
       </div>
+      {allDone && !celebrate && (
+        <button
+          type="button"
+          className="glade-btn"
+          onClick={() => {
+            void sfx("step");
+            void navigate({ to: "/glade" });
+          }}
+        >
+          <Pic name="mushroom" className="glade-btn-pic" />
+          <span>Лесная полянка</span>
+        </button>
+      )}
       {celebrate && (
         <div className="celebrate" role="dialog" aria-label="Лес пройден">
           {celebrateCard && (
@@ -171,6 +184,7 @@ export function Forest() {
                 onClick={() => {
                   void sfx("tap");
                   update((s) => ({ ...s, forestCelebrated: true }));
+                  void say(["glade-open"]);
                 }}
               >
                 Ура!

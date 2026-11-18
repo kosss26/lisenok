@@ -126,3 +126,39 @@ test("hard words come back first, and clean answers retire them", async () => {
   st = nextWordStat(st, 0, false);
   assert.ok(!mk(st));
 });
+
+test("practice on the glade: weak skills and weak words first, then mixed review", async () => {
+  const { makePractice, PRACTICE } = await import("./tasks.ts");
+  for (let seed = 0; seed < 40; seed++) {
+    let s = seed * 7919 + 13;
+    const rand = () => (s = (s * 9301 + 49297) % 233280) / 233280;
+    for (const level of [1, 2, 3] as Level[]) {
+      const weakWord = WORDS_BY_LEVEL[level][seed % WORDS_BY_LEVEL[level].length];
+      const tasks = makePractice(level, ["sub"], new Set([weakWord]), rand);
+      assert.equal(tasks.length, PRACTICE);
+      assert.equal(tasks[0].skill, "sub", "weak skill first");
+      assert.ok(
+        tasks.slice(1, 3).some((t) => t.word === weakWord),
+        `weak word ${weakWord} early (level ${level})`,
+      );
+      const words = tasks.flatMap((t) => (t.word ? [t.word] : []));
+      assert.equal(new Set(words).size, words.length, "no word twice");
+      for (let i = 1; i < tasks.length; i++)
+        if (i > 2) assert.notEqual(tasks[i].skill, tasks[i - 1].skill, "review mixes skills");
+      for (const t of tasks) for (const k of [...t.prompt, ...t.hint]) assert.ok(lines[k], k);
+    }
+    // nothing weak: plain mixed review
+    const plain = makePractice(2, [], new Set(), rand);
+    assert.equal(plain.length, PRACTICE);
+  }
+});
+
+test("glade finds have pictures and word clips", async () => {
+  const { FINDS } = await import("../content/glade.ts");
+  for (const f of FINDS) {
+    assert.ok(hasPic(f.pic), f.pic);
+    assert.ok(lines[wordKey(f.id)], f.id);
+  }
+  for (const k of ["glade-hello", "glade-find", "glade-more", "glade-all", "glade-open"])
+    assert.ok(lines[k], k);
+});

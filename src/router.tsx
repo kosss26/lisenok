@@ -5,6 +5,7 @@ import { WorldMap } from "./screens/world-map";
 import { Forest } from "./screens/forest";
 import { StopScreen } from "./screens/stop";
 import { Album } from "./screens/album";
+import { Glade } from "./screens/glade";
 
 const root = createRootRoute({ component: Shell });
 const title = createRoute({ getParentRoute: () => root, path: "/", component: Title });
@@ -15,10 +16,11 @@ export const stopRoute = createRoute({
   path: "/forest/$stopId",
   component: StopScreen,
 });
+const glade = createRoute({ getParentRoute: () => root, path: "/glade", component: Glade });
 const album = createRoute({ getParentRoute: () => root, path: "/album", component: Album });
 
 export const router = createRouter({
-  routeTree: root.addChildren([title, map, forest, stopRoute, album]),
+  routeTree: root.addChildren([title, map, forest, stopRoute, glade, album]),
   defaultPreload: false,
 });
 
