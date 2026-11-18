@@ -1,9 +1,11 @@
 import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "@tanstack/react-router";
-import { FOREST } from "../content/forest";
+import { FOREST, type Stop } from "../content/forest";
+import { introKey, outroKey } from "../content/voice";
+import { useDialogue } from "../game/dialogue";
 import { BackButton, Fox, Pic, Scene } from "../components/kit";
 import { TaskView, type Mood } from "../components/tasks";
-import { say, sfx, stopVoice } from "../game/audio";
+import { sfx, stopVoice } from "../game/audio";
 import { finishStop, getProgress, recordTask, stopOpen } from "../game/progress";
 import { makeRound, type Task } from "../game/tasks";
 import { stopRoute } from "../router";
@@ -38,12 +40,6 @@ function StopGame({ stopIndex }: { stopIndex: number }) {
   );
   const mistakes = useRef(0);
 
-  useEffect(() => {
-    if (phase !== "hello") return;
-    const t = window.setTimeout(() => void say([`hello-${stop.id}`]), 300);
-    return () => window.clearTimeout(t);
-  }, [phase, stop.id]);
-
   const solved = (m: number, hinted: boolean) => {
     recordTask(stop.skill, m, hinted);
     mistakes.current += m + (hinted && m === 0 ? 1 : 0);
@@ -55,13 +51,10 @@ function StopGame({ stopIndex }: { stopIndex: number }) {
     setReward(r);
     setPhase("reward");
     void sfx("star");
-    window.setTimeout(
-      () => void say([`thanks-${stop.id}`, ...(r.level === "up" ? ["level-up"] : [])]),
-      700,
-    );
   };
 
   const foxPose = mood === "happy" ? "cheer" : mood === "oops" ? "think" : "point";
+  const residentPose = mood === "happy" ? "-happy" : mood === "oops" ? "-sad" : "";
 
   return (
     <Scene bg="bg-clearing" className={`stop-screen phase-${phase}`}>
@@ -79,29 +72,21 @@ function StopGame({ stopIndex }: { stopIndex: number }) {
       </div>
 
       {phase === "hello" && (
-        <div className="hello">
-          <div className="bubble">
-            <p>{stop.hello}</p>
-          </div>
-          <Pic name={stop.resident} className="hello-resident" alt={stop.name} />
-          <button
-            type="button"
-            className="big-btn help-btn"
-            onClick={() => {
-              void sfx("tap");
-              setPhase("task");
-            }}
-          >
-            Помочь!
-          </button>
-        </div>
+        <Hello
+          stop={stop}
+          onHelp={() => {
+            void sfx("tap");
+            stopVoice();
+            setPhase("task");
+          }}
+        />
       )}
 
       {phase === "task" && (
         <>
           <TaskView key={step} task={round[step]} onSolved={solved} onMood={setMood} />
           <div className="task-friends" aria-hidden>
-            <Pic name={stop.resident} className="friend-resident" />
+            <Pic name={stop.resident + residentPose} className={`friend-resident mood-${mood}`} />
             <Fox pose={foxPose} className={`friend-fox mood-${mood}`} />
           </div>
         </>
@@ -117,6 +102,7 @@ function StopGame({ stopIndex }: { stopIndex: number }) {
             <span>{reward.first ? `Подарок: ${stop.giftName.toLowerCase()}` : stop.giftName}</span>
           </div>
           {reward.level === "up" && <p className="level-note">Задания станут чуть интереснее!</p>}
+          <Outro stop={stop} levelUp={reward.level === "up"} />
           <button
             type="button"
             className="big-btn next-btn"
@@ -131,5 +117,76 @@ function StopGame({ stopIndex }: { stopIndex: number }) {
         </div>
       )}
     </Scene>
+  );
+}
+
+const residentPic = (stop: Stop, pose: string) => stop.resident + (pose ? `-${pose}` : "");
+
+/** The resident and the fox talk before the tasks: voiced lines, poses change with each line. */
+function Hello({ stop, onHelp }: { stop: Stop; onHelp: () => void }) {
+  const keys = stop.intro.map((_, i) => introKey(stop.id, i));
+  const { index, finished, next } = useDialogue(keys);
+  const line = stop.intro[index];
+  const seen = stop.intro.slice(0, index + 1);
+  const resPose = seen.filter((l) => l.who === "res").pop()?.pose ?? "sad";
+  const foxPose = seen.flatMap((l) => (l.who === "fox" ? [l.pose] : [])).pop() ?? "wave";
+
+  return (
+    <div className={`hello speaker-${line.who}`}>
+      <button
+        type="button"
+        className={`bubble from-${line.who}`}
+        key={index}
+        onClick={next}
+        aria-label="Дальше"
+      >
+        <span className="bubble-name">{line.who === "fox" ? "Лисёнок" : stop.name}</span>
+        <p>{line.text}</p>
+      </button>
+      <div className="talkers">
+        <Pic
+          key={`r-${resPose}`}
+          name={residentPic(stop, resPose)}
+          className={`talker talker-res ${line.who === "res" ? "is-talking" : ""}`}
+          alt={stop.name}
+        />
+        <Fox
+          key={`f-${foxPose}`}
+          pose={foxPose}
+          className={`talker talker-fox ${line.who === "fox" ? "is-talking" : ""}`}
+        />
+      </div>
+      <button
+        type="button"
+        className={`big-btn help-btn ${finished ? "is-ready" : ""}`}
+        onClick={onHelp}
+      >
+        Помочь!
+      </button>
+    </div>
+  );
+}
+
+/** After the star: the resident thanks, the fox answers. */
+function Outro({ stop, levelUp }: { stop: Stop; levelUp: boolean }) {
+  const keys = [outroKey(stop.id, 0), ...(levelUp ? ["level-up"] : []), outroKey(stop.id, 1)];
+  const { index, next } = useDialogue(keys, { delay: 700 });
+  const line = stop.outro[index === keys.length - 1 ? 1 : 0];
+  return (
+    <button
+      type="button"
+      className={`reward-talk from-${line.who}`}
+      onClick={next}
+      aria-label="Дальше"
+    >
+      {line.who === "res" ? (
+        <Pic name={residentPic(stop, line.pose)} className="reward-talker" alt={stop.name} />
+      ) : (
+        <Fox pose={line.pose} className="reward-talker" />
+      )}
+      <span className="reward-say" key={line.text}>
+        {line.text}
+      </span>
+    </button>
   );
 }

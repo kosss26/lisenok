@@ -15,6 +15,8 @@ args = sys.argv[2:]
 only_missing = "only-missing" in args
 pick = {a for a in args if a != "only-missing"}
 lines = json.load(open("assets/voice-lines.json", encoding="utf-8"))
+# residents speak with their own Silero speaker and a pitch shift (key -> {speaker, pitch})
+voices = json.load(open("assets/voice-speakers.json", encoding="utf-8"))
 out = "public/voice"
 os.makedirs(out, exist_ok=True)
 done = 0
@@ -28,7 +30,7 @@ with tempfile.TemporaryDirectory() as tmp:
             continue
         # a lone letter or syllable reads better with a full stop
         try:
-            audio = model.apply_tts(text=text if text[-1] in ".!?:" else text + ".", speaker=SPEAKER,
+            audio = model.apply_tts(text=text if text[-1] in ".!?:" else text + ".", speaker=voices.get(key, {}).get("speaker", SPEAKER),
                                     sample_rate=RATE, put_accent=True, put_yo=True)
         except ValueError:
             print("cannot synthesize", key, repr(text))
@@ -41,8 +43,10 @@ with tempfile.TemporaryDirectory() as tmp:
             w.setsampwidth(2)
             w.setframerate(RATE)
             w.writeframes(pcm.tobytes())
+        pitch = voices.get(key, {}).get("pitch", 1)
+        shift = f"asetrate={RATE}*{pitch},aresample={RATE},atempo={1 / pitch:.4f}," if pitch != 1 else ""
         subprocess.run(["ffmpeg", "-v", "error", "-y", "-i", wav,
-                        "-af", "silenceremove=start_periods=1:start_threshold=-55dB:start_silence=0.06,areverse,silenceremove=start_periods=1:start_threshold=-55dB:start_silence=0.1,areverse,loudnorm=I=-16:TP=-1.5,apad=pad_dur=0.06",
+                        "-af", shift + "silenceremove=start_periods=1:start_threshold=-55dB:start_silence=0.06,areverse,silenceremove=start_periods=1:start_threshold=-55dB:start_silence=0.1,areverse,loudnorm=I=-16:TP=-1.5,apad=pad_dur=0.06",
                         "-ar", "24000", "-ac", "1", "-b:a", "40k", "-map_metadata", "-1", target], check=True)
         done += 1
 # drop clips for lines that no longer exist

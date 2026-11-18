@@ -20,6 +20,9 @@ SHEETS = {
     "objects-2.jpg": (3, ["house", "cheese", "poppy", "onion", "oak", "moon", "carrot", "strawberry", "daisy"], 260),
     "treasures.jpg": (3, ["t-acorn", "t-feather", "t-firefly", "t-snail", "t-maple", "t-pebble", "t-whistle", "t-rowan", "t-clover"], 300),
 }
+# resident poses for the dialogues: worried (asking for help) and happy
+for r in ["hedgehog", "squirrel", "hare", "owl", "bear", "beaver", "badger", "mouse", "frog"]:
+    SHEETS[f"res-{r}.jpg"] = (1, [f"{r}-sad", f"{r}-happy"], 460)
 session = new_session("isnet-general-use")
 only = set(sys.argv[1:])
 os.makedirs(OUT, exist_ok=True)

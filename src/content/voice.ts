@@ -51,6 +51,22 @@ export const letterKey = (l: string) => `letter-${translit(l)}`;
 export const sylKey = (s: string) => `syl-${translit(s)}`;
 export const numKey = (n: number) => `n-${n}`;
 export const wordKey = (id: string) => `w-${id}`;
+export const introKey = (stop: string, i: number) => `dlg-${stop}-${i}`;
+export const outroKey = (stop: string, i: number) => `bye-${stop}-${i}`;
+
+/** Lines spoken by a resident get their own voice; everything else is "xenia" (the fox and the narrator). */
+export function voiceSpeakers(): Record<string, { speaker: string; pitch: number }> {
+  const out: Record<string, { speaker: string; pitch: number }> = {};
+  for (const stop of FOREST) {
+    stop.intro.forEach((l, i) => {
+      if (l.who === "res") out[introKey(stop.id, i)] = stop.voice;
+    });
+    stop.outro.forEach((l, i) => {
+      if (l.who === "res") out[outroKey(stop.id, i)] = stop.voice;
+    });
+  }
+  return out;
+}
 
 const ONES = ["ноль", "один", "два", "три", "четыре", "пять", "шесть", "семь", "восемь", "девять"];
 const TEENS = [
@@ -180,8 +196,8 @@ export function voiceLines(): Record<string, string> {
   for (const s of syl) lines[sylKey(s)] = solo(s.toLowerCase());
   for (const s of SENTENCES) lines[`sen-${s.id}`] = s.text;
   for (const stop of FOREST) {
-    lines[`hello-${stop.id}`] = stop.hello;
-    lines[`thanks-${stop.id}`] = stop.thanks;
+    stop.intro.forEach((l, i) => (lines[introKey(stop.id, i)] = l.text));
+    stop.outro.forEach((l, i) => (lines[outroKey(stop.id, i)] = l.text));
   }
   for (const { id, name } of NAMES) {
     lines[`name-${id}-hi`] = `Привет, ${name}! Отправимся в путь?`;

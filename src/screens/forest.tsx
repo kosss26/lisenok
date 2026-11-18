@@ -112,7 +112,10 @@ export function Forest() {
               >
                 <span className="stop-glow" aria-hidden />
                 <span className="stop-body">
-                  <Pic name={stop.resident} className="stop-pic" />
+                  <Pic
+                    name={stop.resident + (done ? "-happy" : isNext ? "-sad" : "")}
+                    className="stop-pic"
+                  />
                 </span>
                 {done && !celebrate && <Pic name="star" className="stop-star" />}
                 <span className="stop-num" aria-hidden>
@@ -139,7 +142,7 @@ export function Forest() {
                 style={
                   {
                     "--from": `translate(${stop.x}%, ${stop.y}%)`,
-                    "--to": `translate(${10 + i * 10}%, ${5 + (i % 2) * 5 + Math.abs(4 - i) * 0.8}%)`,
+                    "--to": `translate(${10 + i * 10}%, ${16 + (i % 2) * 3 + Math.abs(4 - i) * 1.3}%)`,
                     "--delay": `${0.2 + i * 0.16}s`,
                   } as CSSProperties
                 }

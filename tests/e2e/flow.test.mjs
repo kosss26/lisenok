@@ -29,6 +29,25 @@ test("first launch: story, map, only the forest is open", async (t) => {
   assert.deepEqual(errors, []);
 });
 
+test("dialogue: resident and fox take turns, poses change, a tap skips a line", async (t) => {
+  const { page, errors } = await openPhone(t, {
+    path: "/forest/hedgehog",
+    progress: { intro: true },
+  });
+  await page.waitForSelector(".bubble.from-res");
+  assert.match(await page.locator(".talker-res").getAttribute("src"), /hedgehog-sad/);
+  await page.click(".bubble");
+  await page.waitForSelector(".bubble.from-fox");
+  assert.match(await page.locator(".bubble").innerText(), /Лисёнок/);
+  assert.equal(await page.locator(".talker-fox.is-talking").count(), 1);
+  await page.click(".bubble");
+  await page.waitForSelector(".bubble.from-res");
+  assert.match(await page.locator(".talker-res").getAttribute("src"), /hedgehog\.webp/);
+  await page.click(".bubble");
+  await page.waitForSelector(".help-btn.is-ready");
+  assert.deepEqual(errors, []);
+});
+
 test("a locked stop cannot be opened by address", async (t) => {
   const { page } = await openPhone(t, { path: "/forest/frog", progress: { intro: true } });
   await page.waitForSelector(".forest-screen");

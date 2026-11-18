@@ -12,7 +12,10 @@ const base = {
 export const IconBulb = ({ className }: P) => (
   <svg {...base} className={`icon icon-bulb ${className ?? ""}`}>
     <path d="M9 18h6M10 21h4" />
-    <path d="M12 3a6 6 0 00-3.6 10.8c.7.6 1.1 1.3 1.1 2.2h5c0-.9.4-1.6 1.1-2.2A6 6 0 0012 3z" className="fill" />
+    <path
+      d="M12 3a6 6 0 00-3.6 10.8c.7.6 1.1 1.3 1.1 2.2h5c0-.9.4-1.6 1.1-2.2A6 6 0 0012 3z"
+      className="fill"
+    />
   </svg>
 );
 export const IconGear = ({ className }: P) => (

@@ -16,7 +16,7 @@ http://creativecommons.org/licenses/by/4.0/
 
 ## Голос
 
-Все фразы синтезированы Silero TTS v5 (ru), голос xenia, скриптом `tools/make-voice.py`.
+Все фразы синтезированы Silero TTS v5 (ru) скриптом `tools/make-voice.py`: лисёнок и рассказчик — голос xenia, жители леса — голоса aidar, baya, kseniya и eugene со сдвигом высоты тона (`assets/voice-speakers.json`).
 Модели Silero распространяются по лицензии CC BY-NC 4.0 — подходит для личного некоммерческого
 использования. Для коммерческой версии голос нужно перезаписать (живой диктор или коммерческий TTS).
 
