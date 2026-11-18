@@ -31,6 +31,23 @@ export async function openPhone(t, { progress, path = "", offline = false } = {}
     if (m.type() === "error" && !(offline && /Failed to load resource/.test(m.text())))
       errors.push(m.text());
   });
+  if (process.env.PW_FALLBACK)
+    await page.addInitScript(() => {
+      const can = HTMLMediaElement.prototype.canPlayType;
+      HTMLMediaElement.prototype.canPlayType = function (type) {
+        return /ogg|opus/.test(type) ? "" : can.call(this, type);
+      };
+      const src = Object.getOwnPropertyDescriptor(HTMLImageElement.prototype, "src");
+      Object.defineProperty(HTMLImageElement.prototype, "src", {
+        ...src,
+        set(v) {
+          src.set.call(
+            this,
+            String(v).startsWith("data:image/avif") ? "data:image/avif;base64,AA" : v,
+          );
+        },
+      });
+    });
   await page.addInitScript(
     ([seed, key]) => {
       window.__voice = [];
