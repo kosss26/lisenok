@@ -16,7 +16,7 @@ RATE = 48000
 tts = torch.package.PackageImporter(model_path).load_pickle("tts_models", "model")
 # int8 gave nondeterministic garbage on this CPU; float32 is stable
 asr = WhisperModel("medium", device="cpu", compute_type="float32")
-red = lambda s: re.sub(r"[^а-я]", "", s.lower().replace("ё", "е").replace("+", "")) \
+red = lambda s: re.sub(r"[^а-я]", "", s.lower().replace("ё", "е").replace("ю", "йу").replace("+", "")) \
     .replace("о", "а").replace("е", "и").replace("я", "и")
 
 def pcm16k(path):

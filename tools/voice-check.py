@@ -27,7 +27,7 @@ def pcm(path):
                          capture_output=True).stdout
     return np.frombuffer(raw, np.int16).astype(np.float32) / 32768
 
-red = lambda s: re.sub(r"[^а-я]", "", s.lower().replace("ё", "е").replace("+", "")) \
+red = lambda s: re.sub(r"[^а-я]", "", s.lower().replace("ё", "е").replace("ю", "йу").replace("+", "")) \
     .replace("о", "а").replace("е", "и").replace("я", "и")
 pre = pcm("public/voice/q-word-find.mp3") if carrier else np.zeros(0, np.float32)
 low = []
