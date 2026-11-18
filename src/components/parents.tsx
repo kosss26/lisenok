@@ -194,12 +194,13 @@ export function Parents() {
                 ["voice", "Голос"],
                 ["sounds", "Звуки"],
                 ["music", "Музыка"],
+                ["forest", "Звуки леса"],
               ] as const
             ).map(([key, label]) => (
               <label key={key} className="field range">
                 <span>{label}</span>
                 <input
-                  id={`vol-${label}`}
+                  id={`vol-${key}`}
                   type="range"
                   min={0}
                   max={1}

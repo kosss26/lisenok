@@ -5,7 +5,7 @@ import { introKey, outroKey } from "../content/voice";
 import { useDialogue } from "../game/dialogue";
 import { BackButton, Fox, Pic, Scene } from "../components/kit";
 import { TaskView, type Mood } from "../components/tasks";
-import { sfx, stopVoice } from "../game/audio";
+import { setScene, sfx, stopVoice } from "../game/audio";
 import { finishStop, getProgress, recordTask, stopOpen, weakWordIds } from "../game/progress";
 import { makeRound, type Task } from "../game/tasks";
 import { stopRoute } from "../router";
@@ -32,6 +32,10 @@ function StopGame({ stopIndex }: { stopIndex: number }) {
   const stop = FOREST[stopIndex];
   const navigate = useNavigate();
   const [phase, setPhase] = useState<Phase>("hello");
+  useEffect(() => {
+    setScene(phase === "task" ? "tasks" : phase === "reward" ? "celebrate" : "map");
+  }, [phase]);
+  useEffect(() => () => setScene("map"), []);
   const [round] = useState<Task[]>(() =>
     makeRound(stop.skill, getProgress().settings.level, Math.random, weakWordIds(getProgress())),
   );

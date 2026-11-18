@@ -18,7 +18,7 @@ export type Settings = {
   auto: boolean;
   /** minutes per day, 0 = no limit */
   limit: number;
-  volume: { voice: number; sounds: number; music: number };
+  volume: { voice: number; sounds: number; music: number; forest: number };
 };
 export type Progress = {
   intro: boolean;
@@ -50,7 +50,7 @@ const DEFAULT: Progress = {
     level: 1,
     auto: true,
     limit: 0,
-    volume: { voice: 1, sounds: 0.8, music: 0.5 },
+    volume: { voice: 1, sounds: 0.8, music: 0.5, forest: 0.6 },
   },
   playLog: {},
   extra: {},

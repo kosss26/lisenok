@@ -1,16 +1,19 @@
 /**
- * Sound: voice lines, effects and music through one Web Audio graph with three volume buses
- * (voice / sounds / music — set in the parents' corner). Voice lines play as sequences
+ * Sound: voice lines, effects, music and forest sounds through one Web Audio graph with four
+ * volume buses (voice / sounds / music / forest — set in the parents' corner). Voice lines play as sequences
  * ("Найди букву" + "эм"); a new sequence cuts the previous one. Music ducks under the voice.
  */
 import { NO_OPUS, formats, musicUrl, sfxUrl, voiceUrl } from "./assets";
+import type { Scene } from "./assets";
 
 let ctx: AudioContext | null = null;
 let master: GainNode | null = null;
 let voiceBus: GainNode | null = null;
 let soundBus: GainNode | null = null;
 let musicBus: GainNode | null = null;
-const volumes = { voice: 1, sounds: 0.8, music: 0.5 };
+let forestBus: GainNode | null = null;
+export type Volumes = { voice: number; sounds: number; music: number; forest: number };
+const volumes: Volumes = { voice: 1, sounds: 0.8, music: 0.5, forest: 0.6 };
 const raw = new Map<string, Promise<ArrayBuffer>>();
 const buffers = new Map<string, AudioBuffer>();
 const decoding = new Map<string, Promise<AudioBuffer | null>>();
@@ -18,6 +21,7 @@ let paused = false;
 let voiceNode: AudioBufferSourceNode | null = null;
 let sequence = 0;
 const MUSIC_BASE = 0.35;
+const FOREST_BASE = 0.5;
 
 function context() {
   if (!ctx) {
@@ -30,21 +34,24 @@ function context() {
     voiceBus.gain.value = volumes.voice;
     soundBus.gain.value = volumes.sounds;
     musicBus.gain.value = MUSIC_BASE * volumes.music;
+    forestBus = ctx.createGain();
+    forestBus.gain.value = FOREST_BASE * volumes.forest;
     voiceBus.connect(master);
     soundBus.connect(master);
     musicBus.connect(master);
+    forestBus.connect(master);
   }
   if (ctx.state === "suspended" && !paused) void ctx.resume();
   return ctx;
 }
 
-export function setVolumes(next: { voice: number; sounds: number; music: number }) {
+export function setVolumes(next: Partial<Volumes>) {
   Object.assign(volumes, next);
   if (voiceBus) voiceBus.gain.value = volumes.voice;
   if (soundBus) soundBus.gain.value = volumes.sounds;
   if (musicBus) musicBus.gain.value = MUSIC_BASE * volumes.music;
-  if (volumes.music === 0) music?.pause();
-  else if (musicWanted) startMusic();
+  if (forestBus) forestBus.gain.value = FOREST_BASE * volumes.forest;
+  if (musicWanted) startMusic();
 }
 
 // ---------- iPhone silent switch: play as media (iOS 17+) or keep a silent <audio> running ----------
@@ -245,46 +252,95 @@ export function warmSfx() {
     void decode(sfxUrl(s));
 }
 
-// ---------- music: Kevin MacLeod "Easy Lemon" (CC BY 4.0), streamed through the music bus ----------
-let music: HTMLAudioElement | null = null;
+// ---------- music and forest sounds ----------
+// Three tracks (map / tasks / celebration, see assets/SOUND-CREDITS.md) and a looped forest layer
+// (birds, wind, stream), each an <audio> element routed through its own gain into the music or
+// forest bus. Changing the scene cross-fades the tracks; the forest layer plays under all of them.
+type Track = { el: HTMLAudioElement; gain: GainNode | null };
+const tracks = new Map<string, Track>();
+let scene: Scene = "map";
 let musicWanted = false;
+const FADE = 0.6;
+
+function track(name: Scene | "forest"): Track {
+  let t = tracks.get(name);
+  if (!t) {
+    const audio = context();
+    const el = new Audio(musicUrl(name));
+    el.loop = true;
+    el.preload = "auto";
+    el.crossOrigin = "anonymous";
+    let gain: GainNode | null = null;
+    try {
+      gain = audio.createGain();
+      gain.gain.value = 0;
+      audio.createMediaElementSource(el).connect(gain);
+      gain.connect((name === "forest" ? forestBus : musicBus) ?? audio.destination);
+    } catch {
+      gain = null;
+    }
+    t = { el, gain };
+    tracks.set(name, t);
+  }
+  return t;
+}
+function fade(t: Track, on: boolean, fallbackVolume: number) {
+  if (t.gain && ctx) {
+    t.gain.gain.cancelScheduledValues(ctx.currentTime);
+    t.gain.gain.setTargetAtTime(on ? 1 : 0, ctx.currentTime, FADE / 3);
+  } else t.el.volume = on ? fallbackVolume : 0;
+  if (on) {
+    if (t.el.paused) void t.el.play().catch(() => {});
+  } else window.setTimeout(() => t.gain?.gain.value === 0 || !t.gain || t.el.pause(), FADE * 1500);
+}
+/** Start (or keep) the music for the current scene and the forest layer. */
 export function startMusic() {
   musicWanted = true;
-  if (typeof window === "undefined" || volumes.music === 0 || paused) return;
-  const audio = context();
-  if (!music) {
-    music = new Audio(musicUrl());
-    music.loop = true;
-    music.preload = "auto";
-    music.crossOrigin = "anonymous";
-    try {
-      audio.createMediaElementSource(music).connect(musicBus ?? audio.destination);
-    } catch {
-      music.volume = MUSIC_BASE * volumes.music;
-    }
+  if (typeof window === "undefined" || paused) return;
+  context();
+  for (const name of ["map", "tasks", "celebrate"] as Scene[]) {
+    const on = name === scene && volumes.music > 0;
+    if (on || tracks.has(name)) fade(track(name), on, MUSIC_BASE * volumes.music);
   }
-  if (music.paused) void music.play().catch(() => {});
+  const forestOn = volumes.forest > 0;
+  if (forestOn || tracks.has("forest"))
+    fade(track("forest"), forestOn, FOREST_BASE * volumes.forest);
+}
+/** Which music fits the screen: the forest map, a task or a celebration. */
+export function setScene(next: Scene) {
+  if (next === scene) return;
+  scene = next;
+  if (musicWanted) startMusic();
 }
 export function stopMusic() {
   musicWanted = false;
-  music?.pause();
+  for (const t of tracks.values()) t.el.pause();
+}
+/** for tests: which tracks are audible now */
+export function playingTracks() {
+  return [...tracks.entries()]
+    .filter(
+      ([, t]) =>
+        !t.el.paused && (t.gain ? t.gain.gain.value > 0.01 || t.el.volume > 0 : t.el.volume > 0),
+    )
+    .map(([name]) => name);
 }
 
 // ---------- app hidden: freeze everything ----------
-let musicWasPlaying = false;
+let musicWasPlaying: HTMLAudioElement[] = [];
 export function pauseAudio() {
   if (paused) return;
   paused = true;
   stopVoice();
   if (ctx && ctx.state === "running") void ctx.suspend();
-  musicWasPlaying = Boolean(music && !music.paused);
-  music?.pause();
+  musicWasPlaying = [...tracks.values()].map((t) => t.el).filter((el) => !el.paused);
+  for (const el of musicWasPlaying) el.pause();
   silentEl?.pause();
 }
 export function resumeAudio() {
   paused = false;
   if (ctx && ctx.state !== "running") void ctx.resume();
   if (silentEl) void silentEl.play().catch(() => {});
-  if (musicWasPlaying && music) void music.play().catch(() => {});
-  musicWasPlaying = false;
+  for (const el of musicWasPlaying) void el.play().catch(() => {});
+  musicWasPlaying = [];
 }

@@ -2,12 +2,28 @@
 
 ## Музыка
 
-"Easy Lemon" Kevin MacLeod (incompetech.com)
+Три трека, каждый для своего экрана (`tools/make-music.py`: моно 64 кбит/с, плавное начало и конец,
+выравнивание громкости; исходники кладутся в `assets/music-src/`, в репозиторий не входят):
+
+- `public/music/map.mp3` — карта и лесная тропинка: "Carefree" Kevin MacLeod (incompetech.com),
+  первые 100 с — https://incompetech.com/music/royalty-free/mp3-royaltyfree/Carefree.mp3
+- `public/music/tasks.mp3` — задания: "Easy Lemon" Kevin MacLeod (incompetech.com), первые 120 с —
+  https://incompetech.com/music/royalty-free/mp3-royaltyfree/Easy%20Lemon.mp3
+- `public/music/celebrate.mp3` — награды: "Fluffing a Duck" Kevin MacLeod (incompetech.com),
+  первые 45 с — https://incompetech.com/music/royalty-free/mp3-royaltyfree/Fluffing%20a%20Duck.mp3
+
 Licensed under Creative Commons: By Attribution 4.0 License
 http://creativecommons.org/licenses/by/4.0/
-(первые 120 с, моно, плавное начало и конец для зацикливания — `tools/make-sfx.py`;
-исходник: https://incompetech.com/music/royalty-free/mp3-royaltyfree/Easy%20Lemon.mp3,
-кладётся в `assets/music-src/easy-lemon.mp3`, в репозиторий не входит)
+
+## Звуки леса
+
+`public/music/forest.mp3` — 40-секундная бесшовная петля, сведённая `tools/make-music.py`
+из самых ровных отрывков трёх записей (CC0, указываем авторов из благодарности):
+
+- ручей и ветер — "Park ambiences" (park_ambience_river.wav, park_ambience_wind.wav), Thimras,
+  OpenGameArt, CC0 — https://opengameart.org/content/park-ambiences
+- птицы — "Ambient Bird Sounds" (birds-isaiah658.ogg), isaiah658, OpenGameArt, CC0 —
+  https://opengameart.org/content/ambient-bird-sounds
 
 ## Звуковые эффекты
 

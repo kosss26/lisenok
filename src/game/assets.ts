@@ -33,7 +33,8 @@ export const art = (name: string) =>
   asset(formats.avif ? `/art/${name}.avif` : `/art/${name}.webp`);
 export const voiceUrl = (key: string) => sound(`/voice/${key}.mp3`);
 export const sfxUrl = (name: string) => sound(`/sfx/${name}.mp3`);
-export const musicUrl = () => sound("/music/easy-lemon.mp3");
+export type Scene = "map" | "tasks" | "celebrate";
+export const musicUrl = (name: Scene | "forest") => sound(`/music/${name}.mp3`);
 /** which formats the service worker should precache (it cannot test them itself) */
 export const swUrl = () =>
   `/sw.js?img=${formats.avif ? "avif" : "webp"}&aud=${formats.opus ? "ogg" : "mp3"}`;

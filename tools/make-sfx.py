@@ -1,5 +1,5 @@
 # Synthesizes the game's short sound effects (original, no third-party samples) into public/sfx/*.mp3
-# and prepares the background music from assets/music-src (see assets/SOUND-CREDITS.md).
+# (background music and forest sounds: tools/make-music.py).
 # Usage: python3 tools/make-sfx.py
 import os, subprocess, tempfile, wave
 import numpy as np
@@ -88,12 +88,4 @@ env = np.sin(np.pi * x / 0.3) ** 2
 filt = np.convolve(noise, np.ones(30) / 30, mode="same")
 save("step", filt * env + 0.6 * bell(N(14), 0.3, 18), 0.45)
 
-# music: Kevin MacLeod "Easy Lemon" (CC BY 4.0), mono 64k, gentle fades for looping
-src = "assets/music-src/easy-lemon.mp3"
-if os.path.exists(src):
-    os.makedirs("public/music", exist_ok=True)
-    subprocess.run(["ffmpeg", "-v", "error", "-y", "-i", src, "-t", "120",
-                    "-af", "afade=t=in:d=1.5,afade=t=out:st=116:d=4,loudnorm=I=-20:TP=-2",
-                    "-ac", "1", "-ar", "44100", "-b:a", "64k", "-map_metadata", "-1",
-                    "public/music/easy-lemon.mp3"], check=True)
 print("sfx done")
