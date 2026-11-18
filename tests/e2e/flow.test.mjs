@@ -1,7 +1,7 @@
 // Title, story, world map with locked worlds, the path order, mistakes and hints, auto level.
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { openPhone, playStop, saved } from "./helpers.mjs";
+import { artRe, openPhone, playStop, saved } from "./helpers.mjs";
 
 test("first launch: story, map, only the forest is open", async (t) => {
   const { page, errors } = await openPhone(t);
@@ -42,7 +42,7 @@ test("dialogue: resident and fox take turns, poses change, a tap skips a line", 
   assert.equal(await page.locator(".talker-fox.is-talking").count(), 1);
   await page.click(".bubble");
   await page.waitForSelector(".bubble.from-res");
-  assert.match(await page.locator(".talker-res").getAttribute("src"), /hedgehog\.webp/);
+  assert.match(await page.locator(".talker-res").getAttribute("src"), artRe("hedgehog"));
   await page.click(".bubble");
   await page.waitForSelector(".help-btn.is-ready");
   assert.deepEqual(errors, []);

@@ -12,34 +12,64 @@ const URLS = ALL.filter(
 );
 const CACHE = `lisenok-${VERSION}-${q.get("img")}-${q.get("aud")}`;
 
-self.addEventListener("install", (event) => {
-  event.waitUntil(
-    caches
-      .open(CACHE)
-      .then(async (cache) => {
-        // in small batches: a phone on a slow network should not open hundreds of requests at once
-        for (let i = 0; i < URLS.length; i += 24) {
-          await Promise.all(
-            URLS.slice(i, i + 24).map((u) =>
-              cache.add(new Request(u, { cache: "reload" })).catch(() => {}),
-            ),
-          );
-        }
-      })
-      .then(() => self.skipWaiting()),
+const MEDIA = /^\/(art|voice|sfx|music)\//;
+// the shell (page, code, styles, fonts, icons) is small: it is cached during install, so the worker
+// takes over within seconds. Pictures and sounds (~1500 files) are filled in afterwards.
+const SHELL = URLS.filter((u) => !MEDIA.test(u));
+
+/** Puts `urls` into the cache: a copy from an older cache when the file did not change (media
+ * URLs carry a content hash), otherwise from the network. In small batches, skipping what is there. */
+async function store(urls) {
+  const cache = await caches.open(CACHE);
+  const have = new Set(
+    (await cache.keys()).map((r) => new URL(r.url).pathname + new URL(r.url).search),
   );
+  const todo = urls.filter((u) => !have.has(u));
+  for (let i = 0; i < todo.length; i += 16) {
+    await Promise.all(
+      todo.slice(i, i + 16).map(async (u) => {
+        try {
+          // only content-addressed files may be copied ("/" or the manifest must be fresh)
+          const fixed = u.includes("?v=") || u.startsWith("/assets/");
+          const old = fixed ? await caches.match(u) : undefined;
+          if (old) await cache.put(u, old);
+          else await cache.add(new Request(u, { cache: "reload" }));
+        } catch {
+          /* one missing file must not stop the rest; it is fetched again next time */
+        }
+      }),
+    );
+  }
+  return todo.length;
+}
+
+let filling = null;
+/** Fills in every picture and sound, then drops the caches of older versions. Resumable: after an
+ * interruption the next page load asks again and only the missing files are fetched. */
+function fill() {
+  filling ??= store(URLS)
+    .then(async () => {
+      const cache = await caches.open(CACHE);
+      if ((await cache.keys()).length < URLS.length) return;
+      const keys = await caches.keys();
+      await Promise.all(keys.filter((k) => k !== CACHE).map((k) => caches.delete(k)));
+    })
+    .finally(() => (filling = null));
+  return filling;
+}
+
+self.addEventListener("install", (event) => {
+  event.waitUntil(store(SHELL).then(() => self.skipWaiting()));
 });
 
 self.addEventListener("activate", (event) => {
-  event.waitUntil(
-    caches
-      .keys()
-      .then((keys) => Promise.all(keys.filter((k) => k !== CACHE).map((k) => caches.delete(k))))
-      .then(() => self.clients.claim()),
-  );
+  event.waitUntil(self.clients.claim());
+  // also started by the page ("fill" message), which keeps the worker alive while it runs
+  void fill();
 });
 
 self.addEventListener("message", (event) => {
+  if (event.data === "fill") event.waitUntil(fill());
   if (event.data === "status") {
     caches.open(CACHE).then(async (cache) => {
       const have = (await cache.keys()).length;

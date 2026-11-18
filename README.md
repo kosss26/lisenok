@@ -47,7 +47,15 @@ npm run test:e2e                                 # проходит весь л�
 # игра без интернета (итоговая сборка):
 npm run build && (npm run preview &)
 OFFLINE=1 BASE_URL=http://127.0.0.1:8081/ npm run test:e2e
+
+# те же тесты в WebKit (движок Safari):
+npx playwright install webkit                    # + системные библиотеки: npx playwright install-deps webkit
+PW_BROWSER=webkit BASE_URL=http://127.0.0.1:8081/ npm run test:e2e
 ```
+
+Без интернета: service worker сначала кэширует оболочку (страница, код, шрифты — секунды), затем
+докачивает картинки и звуки выбранного формата (AVIF/Opus или WebP/MP3); прерванная докачка
+продолжается при следующем запуске, а после обновления неизменённые файлы берутся из старого кэша.
 
 ## Публикация
 
