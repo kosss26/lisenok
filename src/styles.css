@@ -2610,8 +2610,9 @@ img {
 .forest-tall {
   position: relative;
   left: 50%;
-  width: max(100cqw, calc(100cqh * 9 / 16));
-  height: calc(2 * max(100cqh, calc(100cqw * 16 / 9)));
+  /* zoomed in 1.5x (the sides are cropped) so neighbouring clearings don't crowd each other */
+  width: max(100cqw, calc(150cqh * 9 / 16));
+  height: calc(2 * max(150cqh, calc(100cqw * 16 / 9)));
   transform: translateX(-50%);
   /* the moving layers (fox, stars) are shifted with transforms: they must not make it scroll further */
   overflow: hidden;

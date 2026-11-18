@@ -16,11 +16,22 @@ const ENTRANCE: Pt = { x: 50, y: 99.5 };
 const reduced = () =>
   typeof matchMedia !== "undefined" && matchMedia("(prefers-reduced-motion: reduce)").matches;
 
-/** The fox waits on the path most of the way from the last solved stop to the next one. */
+/** The forest picture is 9 wide : 32 high, so 1% of its height is this many % of its width. */
+const TALL = 32 / 9;
+/** Distance between two points in "% of the width" units. */
+const dist = (a: Pt, b: Pt) => Math.hypot(a.x - b.x, (a.y - b.y) * TALL);
+/** The fox waits right beside the next stop (never on top of another one): of a few spots
+ * around it, it takes the one farthest from every other resident and inside the screen. */
 function foxSpot(next: number): Pt {
-  const to = onPath(FOREST[Math.min(next, FOREST.length - 1)]);
-  const from = next > 0 ? onPath(FOREST[next - 1]) : ENTRANCE;
-  return { x: from.x + (to.x - from.x) * 0.62, y: from.y + (to.y - from.y) * 0.62 + 1.5 };
+  const i = Math.min(next, FOREST.length - 1);
+  const to = onPath(FOREST[i]);
+  const others = FOREST.flatMap((s, j) => (j === i ? [] : [onPath(s)]));
+  const spots: Pt[] = [-14, 14, -11, 11].flatMap((dx) =>
+    [1.6, 0.4].map((dy) => ({ x: to.x + dx, y: to.y + dy })),
+  );
+  const score = (p: Pt) =>
+    (p.x < 22 || p.x > 78 ? -100 : 0) + Math.min(...others.map((o) => dist(p, o)));
+  return spots.reduce((a, b) => (score(b) > score(a) ? b : a));
 }
 /** Farther stops (higher on the picture) are drawn smaller, like in perspective. */
 const depth = (y: number) => Math.min(1, 0.68 + 0.32 * (y / 80));
