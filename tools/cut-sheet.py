@@ -13,6 +13,7 @@ SRC, OUT = "assets/sheets", "public/art"
 SHEETS = {
     "fox-ref.jpg": (1, ["fox-wave", "fox-walk", "fox-jump"], 520),
     "fox-poses.jpg": (2, ["fox-think", "fox-cheer", "fox-read", "fox-point"], 520),
+    "fox-poses-2.jpg": (1, ["fox-listen", "fox-nod", "fox-clap"], 520),
     "residents-1.jpg": (2, ["hedgehog", "squirrel", "hare", "owl"], 460),
     "residents-2.jpg": (2, ["bear", "beaver", "badger", "mouse"], 460),
     "misc.jpg": (2, ["frog", "star-face", "star", "chest"], 400),

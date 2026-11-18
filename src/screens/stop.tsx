@@ -4,7 +4,7 @@ import { FOREST, timeOf, weatherOf, type Stop } from "../content/forest";
 import { StopWeather } from "../components/weather";
 import { introKey, outroKey, youngId } from "../content/voice";
 import { useDialogue } from "../game/dialogue";
-import { BackButton, Fox, Pic, Scene } from "../components/kit";
+import { BackButton, Fox, Pic, Scene, type FoxPose } from "../components/kit";
 import { TaskView, type Guide, type Mood } from "../components/tasks";
 import { TaskFriends } from "../components/friends";
 import { DifficultyBadge } from "../components/difficulty";
@@ -199,7 +199,15 @@ function Hello({ stop, onHelp }: { stop: Stop; onHelp: () => void }) {
   const line = intro[index];
   const seen = intro.slice(0, index + 1);
   const resPose = seen.filter((l) => l.who === "res").pop()?.pose ?? "sad";
-  const foxPose = seen.flatMap((l) => (l.who === "fox" ? [l.pose] : [])).pop() ?? "wave";
+  // while the resident talks the fox reacts: listens to a worry, nods at a request, claps for joy
+  const foxPose: FoxPose =
+    line.who === "fox"
+      ? line.pose
+      : line.pose === "sad"
+        ? "listen"
+        : line.pose === "happy"
+          ? "clap"
+          : "nod";
 
   return (
     <div className={`hello speaker-${line.who}`}>

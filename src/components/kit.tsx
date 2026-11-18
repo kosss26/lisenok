@@ -20,7 +20,8 @@ export function Pic({
   return <img className={className} src={art(name)} alt={alt} draggable={false} style={style} />;
 }
 
-export type FoxPose = "wave" | "walk" | "jump" | "think" | "cheer" | "read" | "point";
+export type FoxPose =
+  "wave" | "walk" | "jump" | "think" | "cheer" | "read" | "point" | "listen" | "nod" | "clap";
 export function Fox({ pose, className = "" }: { pose: FoxPose; className?: string }) {
   return <Pic name={`fox-${pose}`} className={`fox ${className}`} alt="Лисёнок" />;
 }
