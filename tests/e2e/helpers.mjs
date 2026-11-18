@@ -1,7 +1,10 @@
 // Shared helpers for the browser tests (mobile viewport, iPhone 13).
 // BASE_URL    — where the game runs (default: the dev server, http://127.0.0.1:8080/)
 // PW_CHROMIUM — optional path to a Chrome/Chromium binary (otherwise Playwright's own browser)
-import { chromium, devices } from "playwright";
+// PW_BROWSER  — "webkit" runs the tests in WebKit (Safari's engine) instead of Chromium
+import { chromium, devices, webkit } from "playwright";
+
+const WEBKIT = process.env.PW_BROWSER === "webkit";
 
 export const BASE = process.env.BASE_URL || "http://127.0.0.1:8080/";
 export const STOPS = [
@@ -21,7 +24,9 @@ export const artRe = (name) => new RegExp(`/art/${name}\\.(avif|webp)(\\?|$)`);
 
 /** `t` is the node:test context: the browser closes even when an assertion fails. */
 export async function openPhone(t, { progress, path = "", offline = false } = {}) {
-  const browser = await chromium.launch({ executablePath: process.env.PW_CHROMIUM || undefined });
+  const browser = WEBKIT
+    ? await webkit.launch()
+    : await chromium.launch({ executablePath: process.env.PW_CHROMIUM || undefined });
   t?.after(() => browser.close().catch(() => {}));
   const context = await browser.newContext({ ...devices["iPhone 13"], serviceWorkers: "allow" });
   const page = await context.newPage();
@@ -113,4 +118,22 @@ export async function playStop(page, id) {
     await page.waitForTimeout(150);
   }
   await page.waitForSelector(".reward");
+}
+
+/** Drags an element onto another with small mouse steps (like a finger), then lets go. */
+export async function dragTo(page, from, to, { drop = true } = {}) {
+  const a = await (typeof from === "string" ? page.locator(from).first() : from).boundingBox();
+  const b = await (typeof to === "string" ? page.locator(to).first() : to).boundingBox();
+  const ax = a.x + a.width / 2;
+  const ay = a.y + a.height / 2;
+  await page.mouse.move(ax, ay);
+  await page.mouse.down();
+  const steps = 12;
+  for (let i = 1; i <= steps; i++)
+    await page.mouse.move(
+      ax + ((b.x + b.width / 2 - ax) * i) / steps,
+      ay + ((b.y + b.height / 2 - ay) * i) / steps,
+    );
+  await page.waitForTimeout(60);
+  if (drop) await page.mouse.up();
 }

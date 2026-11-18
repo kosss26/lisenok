@@ -5,6 +5,7 @@ import { numKey, shown, sylKey, voiceLines } from "../content/voice";
 import { AGAIN, PRAISE } from "../content/voice";
 import { say, sfx } from "../game/audio";
 import { getProgress } from "../game/progress";
+import { useDrag } from "../game/drag";
 import type { BuildTask, ChoiceTask, Option, Task, Visual } from "../game/tasks";
 import { Pic, SpeakerIcon } from "./kit";
 import { IconBulb } from "./icons";
@@ -151,6 +152,25 @@ function Choice({
   const [picked, setPicked] = useState<string | null>(null);
   const [shaking, setShaking] = useState<string | null>(null);
 
+  // drag an answer onto the card (into the "?" box when there is one); tapping works as well
+  const cardRef = useRef<HTMLDivElement | null>(null);
+  const drag = useDrag<string>({
+    zones: () => [
+      {
+        area: cardRef.current,
+        target: cardRef.current?.querySelector<HTMLElement>(
+          ".math-answer, .cmp-box, .gap, .paper-word, .paper-sentence, .card-pic, .listen-btn",
+        ),
+      },
+    ],
+    onDrop: (id) => {
+      const o = task.options.find((x) => x.id === id);
+      if (o) tap(o);
+    },
+    onNear: () => void sfx("tap", 0.4),
+    disabled: a.solved,
+  });
+
   const tap = (o: Option) => {
     if (a.solved || off.includes(o.id)) return;
     if (o.id === task.answer) {
@@ -167,12 +187,14 @@ function Choice({
   return (
     <div className={`task task-${task.skill} layout-${task.layout}`}>
       <PromptBar task={task} onRepeat={() => void say(task.prompt)} onHint={a.hint} />
-      <VisualCard
-        visual={task.visual}
-        task={task}
-        picked={picked}
-        onListen={() => void say(task.prompt)}
-      />
+      <div ref={cardRef} className={`drop-card ${drag.near !== null ? "is-near" : ""}`}>
+        <VisualCard
+          visual={task.visual}
+          task={task}
+          picked={picked}
+          onListen={() => void say(task.prompt)}
+        />
+      </div>
       <div className={`options options-${task.layout} n${task.options.length}`}>
         {task.options.map((o) => {
           const isAnswer = o.id === task.answer;
@@ -181,7 +203,8 @@ function Choice({
               key={o.id}
               type="button"
               className={[
-                "option",
+                "option drag-item",
+                drag.dragging === o.id ? "is-dragging" : "",
                 off.includes(o.id) ? "is-off" : "",
                 picked === o.id ? "is-right" : "",
                 shaking === o.id ? "is-shaking" : "",
@@ -191,6 +214,8 @@ function Choice({
               data-answer={isAnswer ? "1" : undefined}
               data-option={o.id}
               aria-label={o.label ?? o.id}
+              {...(off.includes(o.id) ? {} : drag.bind(o.id))}
+              style={drag.style(o.id)}
               onClick={() => tap(o)}
             >
               {task.layout === "groups" && o.pic && o.count ? (
@@ -286,11 +311,14 @@ function VisualCard({
   void task;
 }
 
-/** Objects to count: tap each one and the voice counts along. */
+/** Objects to count: tap each one — or carry it into the basket — and the voice counts along. */
 function CountCard({ visual }: { visual: Extract<Visual, { type: "count" }> }) {
   const [marked, setMarked] = useState<number[]>([]);
+  const [basket, setBasket] = useState<number[]>([]);
+  const basketRef = useRef<HTMLDivElement | null>(null);
   const tens = visual.mode === "tens" ? Math.floor(visual.n / 10) : 0;
   const ones = visual.mode === "tens" ? visual.n % 10 : visual.n;
+  const withBasket = visual.mode !== "tens";
   const mark = (i: number, value: number) => {
     if (marked.includes(i)) return;
     const next = [...marked, i];
@@ -300,6 +328,15 @@ function CountCard({ visual }: { visual: Extract<Visual, { type: "count" }> }) {
   };
   // running total in the order the child taps (tens strips count 10)
   const totalFor = (i: number) => [...marked, i].reduce((s, k) => s + (k < 1000 ? 1 : 10), 0);
+  const drag = useDrag<number>({
+    zones: () => [{ area: basketRef.current }],
+    onDrop: (i) => {
+      if (basket.includes(i)) return;
+      setBasket((b) => [...b, i]);
+      if (!marked.includes(i)) mark(i, totalFor(i));
+    },
+    onNear: () => void sfx("tap", 0.3),
+  });
   return (
     <div className={`card card-count count-${visual.mode}`}>
       {tens > 0 && (
@@ -327,8 +364,16 @@ function CountCard({ visual }: { visual: Extract<Visual, { type: "count" }> }) {
           <button
             key={i}
             type="button"
-            className={`count-item ${marked.includes(i) ? "is-marked" : ""}`}
+            className={[
+              "count-item",
+              withBasket ? "drag-item" : "",
+              drag.dragging === String(i) ? "is-dragging" : "",
+              marked.includes(i) ? "is-marked" : "",
+              basket.includes(i) ? "is-in-basket" : "",
+            ].join(" ")}
             aria-label="посчитать"
+            {...(withBasket && !basket.includes(i) ? drag.bind(i) : {})}
+            style={drag.style(i)}
             onClick={() => mark(i, totalFor(i))}
           >
             <Pic name={visual.pic} className="count-pic" />
@@ -338,6 +383,21 @@ function CountCard({ visual }: { visual: Extract<Visual, { type: "count" }> }) {
           </button>
         ))}
       </div>
+      {withBasket && (
+        <div
+          ref={basketRef}
+          className={`count-basket ${drag.near !== null ? "is-near" : ""} ${basket.length ? "has-some" : ""}`}
+          aria-hidden
+        >
+          <span className="basket-load">
+            {basket.slice(-5).map((i) => (
+              <Pic key={i} name={visual.pic} className="basket-pic" />
+            ))}
+          </span>
+          <Pic name="basket" className="basket-img" />
+          {basket.length > 0 && <span className="basket-count">{basket.length}</span>}
+        </div>
+      )}
     </div>
   );
 }
@@ -409,12 +469,12 @@ function Build({
   const done = placed === task.target.length;
   const nextIdx = task.pieces.findIndex((p, i) => !used.includes(i) && p === task.target[placed]);
 
-  const tap = (i: number) => {
+  const tap = (i: number, dropped?: DOMRect) => {
     if (done || used.includes(i)) return;
     if (task.pieces[i] === task.target[placed]) {
       const next = [...used, i];
       const slot = placed;
-      const from = pieceRefs.current[i]?.getBoundingClientRect();
+      const from = dropped ?? pieceRefs.current[i]?.getBoundingClientRect();
       const to = slotRefs.current[slot]?.getBoundingClientRect();
       if (from && to && !reducedMotion()) {
         setFlying((f) => [...f, { id: slot, text: task.pieces[i], from, to }]);
@@ -433,6 +493,15 @@ function Build({
     }
   };
 
+  // drag a piece into the word: it snaps to the next empty slot
+  const slotsRef = useRef<HTMLDivElement | null>(null);
+  const drag = useDrag<number>({
+    zones: () => [{ area: slotsRef.current, target: slotRefs.current[placed] }],
+    onDrop: (i, _zone, rect) => tap(i, rect),
+    onNear: () => void sfx("tap", 0.4),
+    disabled: done,
+  });
+
   const land = (slot: number) => {
     setFlying((f) => f.filter((x) => x.id !== slot));
     setLanded((l) => [...l, slot]);
@@ -443,7 +512,10 @@ function Build({
       <PromptBar task={task} onRepeat={() => void say(task.prompt)} onHint={a.hint} />
       <div className="card card-build">
         <Pic name={task.pic} className="card-pic" />
-        <div className={`slots n${task.target.length}`}>
+        <div
+          ref={slotsRef}
+          className={`slots n${task.target.length} ${drag.near !== null ? "is-near" : ""}`}
+        >
           {task.target.map((piece, i) => (
             <span
               key={i}
@@ -473,7 +545,8 @@ function Build({
             key={i}
             type="button"
             className={[
-              "piece",
+              "piece drag-item",
+              drag.dragging === String(i) ? "is-dragging" : "",
               used.includes(i) ? "is-used" : "",
               shaking === i ? "is-shaking" : "",
               a.showHint && i === nextIdx && !done ? "is-hint" : "",
@@ -483,6 +556,8 @@ function Build({
             ref={(el) => {
               pieceRefs.current[i] = el;
             }}
+            {...drag.bind(i)}
+            style={drag.style(i)}
             onClick={() => tap(i)}
           >
             {piece}
